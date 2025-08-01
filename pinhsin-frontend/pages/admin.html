@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品信工務系統 - 管理員後台</title>
+    
+    <!-- 字體載入 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 樣式載入 -->
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../assets/css/pages/admin.css">
+    
+    <!-- 圖示庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 管理員佈局容器 -->
+    <div class="admin-layout">
+        <!-- 管理員頭部 -->
+        <header class="admin-header">
+            <div class="admin-flex admin-items-center admin-gap-3">
+                <!-- 側邊欄切換按鈕 -->
+                <button id="sidebarToggle" class="admin-btn admin-btn-secondary admin-btn-sm">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- 品牌標識 -->
+                <div class="admin-flex admin-items-center admin-gap-2">
+                    <i class="fas fa-hard-hat admin-text-primary" style="font-size: 1.5rem;"></i>
+                    <h1 class="admin-font-bold admin-text-xl">品信工務系統</h1>
+                </div>
+            </div>
+            
+            <!-- 頭部右側功能 -->
+            <div class="admin-flex admin-items-center admin-gap-3">
+                <!-- 主題切換 -->
+                <button id="themeToggle" class="admin-btn admin-btn-secondary admin-btn-sm admin-tooltip" data-tooltip="切換主題">
+                    <i class="fas fa-moon"></i>
+                </button>
+                
+                <!-- 通知 -->
+                <button class="admin-btn admin-btn-secondary admin-btn-sm admin-tooltip" data-tooltip="通知">
+                    <i class="fas fa-bell"></i>
+                    <span class="admin-status admin-status-info" style="position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px;">3</span>
+                </button>
+                
+                <!-- 用戶資訊 -->
+                <div class="admin-flex admin-items-center admin-gap-2">
+                    <div class="admin-text-right">
+                        <div class="admin-font-semibold admin-text-sm">管理員</div>
+                        <div class="admin-text-xs" style="color: var(--text-gray-medium);">admin@pinhsin.com</div>
+                    </div>
+                    <button class="admin-btn admin-btn-secondary admin-btn-sm">
+                        <i class="fas fa-user-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 側邊欄 -->
+        <aside id="adminSidebar" class="admin-sidebar">
+            <nav class="admin-nav">
+                <!-- 主要導航 -->
+                <a href="#dashboard" class="admin-nav-item active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt icon"></i>
+                    <span class="text">儀表板</span>
+                </a>
+                
+                <a href="#employeeManagement" class="admin-nav-item" data-page="employeeManagement">
+                    <i class="fas fa-users icon"></i>
+                    <span class="text">用戶管理</span>
+                </a>
+                
+                <a href="#issues" class="admin-nav-item" data-page="issues">
+                    <i class="fas fa-exclamation-triangle icon"></i>
+                    <span class="text">待處理問題</span>
+                </a>
+                
+                <a href="#sites" class="admin-nav-item" data-page="sites">
+                    <i class="fas fa-building icon"></i>
+                    <span class="text">工地管理</span>
+                </a>
+                
+                <a href="#permissions" class="admin-nav-item" data-page="permissions">
+                    <i class="fas fa-key icon"></i>
+                    <span class="text">權限管理</span>
+                </a>
+                
+                <div class="admin-nav-divider"></div>
+                
+                <!-- 系統功能 -->
+                <a href="#system" class="admin-nav-item" data-page="system">
+                    <i class="fas fa-cog icon"></i>
+                    <span class="text">系統監控</span>
+                </a>
+                
+                <a href="#line" class="admin-nav-item" data-page="line">
+                    <i class="fab fa-line icon"></i>
+                    <span class="text">LINE Bot</span>
+                </a>
+                
+                <div class="admin-nav-divider"></div>
+                
+                <!-- 進階功能 -->
+                <a href="#templates" class="admin-nav-item" data-page="templates">
+                    <i class="fas fa-file-powerpoint icon"></i>
+                    <span class="text">模板管理</span>
+                </a>
+                
+                <a href="#clients" class="admin-nav-item" data-page="clients">
+                    <i class="fas fa-handshake icon"></i>
+                    <span class="text">客戶專區</span>
+                </a>
+                
+                <div class="admin-nav-divider"></div>
+                
+                <!-- 系統工具 -->
+                <a href="#logs" class="admin-nav-item" data-page="logs">
+                    <i class="fas fa-list-alt icon"></i>
+                    <span class="text">系統日誌</span>
+                </a>
+                
+                <a href="#settings" class="admin-nav-item" data-page="settings">
+                    <i class="fas fa-wrench icon"></i>
+                    <span class="text">系統設定</span>
+                </a>
+            </nav>
+        </aside>
+        
+        <!-- 主要內容區域 -->
+        <main class="admin-main">
+            <!-- 儀表板頁面 -->
+            <div id="dashboardPage" class="admin-page active">
+                <!-- 頁面標題 -->
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-4">
+                    <div>
+                        <h2 class="admin-font-bold admin-text-2xl admin-mb-1">管理員儀表板</h2>
+                        <p style="color: var(--text-gray-medium);">系統概覽和快速操作</p>
+                    </div>
+                    <button class="admin-btn admin-btn-primary">
+                        <i class="fas fa-sync-alt"></i>
+                        重新整理
+                    </button>
+                </div>
+                
+                <!-- 統計卡片 -->
+                <div class="admin-grid admin-grid-3 admin-mb-4">
+                    <div class="admin-card">
+                        <div class="admin-card-body admin-text-center">
+                            <div class="admin-flex admin-items-center admin-justify-center admin-mb-2">
+                                <i class="fas fa-users admin-text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <div class="admin-font-bold admin-text-2xl admin-mb-1">24</div>
+                            <div style="color: var(--text-gray-medium);">總用戶數</div>
+                            <div class="admin-text-success admin-text-sm admin-mt-1">
+                                <i class="fas fa-arrow-up"></i> +2 本週
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-card">
+                        <div class="admin-card-body admin-text-center">
+                            <div class="admin-flex admin-items-center admin-justify-center admin-mb-2">
+                                <i class="fas fa-exclamation-circle admin-text-danger" style="font-size: 2rem;"></i>
+                            </div>
+                            <div class="admin-font-bold admin-text-2xl admin-mb-1" id="missingReportsCount">0</div>
+                            <div style="color: var(--text-gray-medium);">缺日報工地</div>
+                            <div class="admin-text-danger admin-text-sm admin-mt-1">
+                                <i class="fas fa-clock"></i> 需要關注
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-card">
+                        <div class="admin-card-body admin-text-center">
+                            <div class="admin-flex admin-items-center admin-justify-center admin-mb-2">
+                                <i class="fas fa-exclamation-triangle admin-text-danger" style="font-size: 2rem;"></i>
+                            </div>
+                            <div class="admin-font-bold admin-text-2xl admin-mb-1">3</div>
+                            <div style="color: var(--text-gray-medium);">待處理問題</div>
+                            <div class="admin-text-warning admin-text-sm admin-mt-1">
+                                <i class="fas fa-clock"></i> 需要關注
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 快速操作 -->
+                <div class="admin-card admin-mb-4">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">快速操作</h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-3 admin-gap-3">
+                            <button class="admin-btn admin-btn-primary admin-btn-lg">
+                                <i class="fas fa-user-plus"></i>
+                                新增用戶
+                            </button>
+                            <button class="admin-btn admin-btn-success admin-btn-lg">
+                                <i class="fas fa-building"></i>
+                                新增工地
+                            </button>
+                            <button class="admin-btn admin-btn-info admin-btn-lg">
+                                <i class="fas fa-broadcast-tower"></i>
+                                發送通知
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 最近活動 -->
+                <div class="admin-grid admin-grid-2 admin-gap-4">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">最近活動</h3>
+                            <a href="#logs" class="admin-text-primary admin-text-sm">查看全部</a>
+                        </div>
+                        <div class="admin-card-body admin-p-0">
+                            <div class="admin-activity-list">
+                                <div class="admin-activity-item">
+                                    <div class="admin-activity-icon admin-bg-primary">
+                                        <i class="fas fa-user-plus"></i>
+                                    </div>
+                                    <div class="admin-activity-content">
+                                        <div class="admin-activity-title">新用戶註冊</div>
+                                        <div class="admin-activity-desc">manager2 已成功註冊</div>
+                                        <div class="admin-activity-time">2 小時前</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="admin-activity-item">
+                                    <div class="admin-activity-icon admin-bg-success">
+                                        <i class="fas fa-clipboard-check"></i>
+                                    </div>
+                                    <div class="admin-activity-content">
+                                        <div class="admin-activity-title">日報提交</div>
+                                        <div class="admin-activity-desc">工地A 今日日報已提交</div>
+                                        <div class="admin-activity-time">4 小時前</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="admin-activity-item">
+                                    <div class="admin-activity-icon admin-bg-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <div class="admin-activity-content">
+                                        <div class="admin-activity-title">系統警告</div>
+                                        <div class="admin-activity-desc">工地B 日報逾期未提交</div>
+                                        <div class="admin-activity-time">6 小時前</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">系統狀態</h3>
+                            <span class="admin-status admin-status-active">正常運行</span>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="admin-system-stats">
+                                <div class="admin-stat-item">
+                                    <div class="admin-stat-label">API 回應時間</div>
+                                    <div class="admin-stat-value admin-text-success">125ms</div>
+                                    <div class="admin-stat-bar">
+                                        <div class="admin-stat-progress" style="width: 85%; background-color: var(--admin-success);"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="admin-stat-item">
+                                    <div class="admin-stat-label">資料庫連線</div>
+                                    <div class="admin-stat-value admin-text-success">良好</div>
+                                    <div class="admin-stat-bar">
+                                        <div class="admin-stat-progress" style="width: 95%; background-color: var(--admin-success);"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="admin-stat-item">
+                                    <div class="admin-stat-label">記憶體使用</div>
+                                    <div class="admin-stat-value admin-text-warning">68%</div>
+                                    <div class="admin-stat-bar">
+                                        <div class="admin-stat-progress" style="width: 68%; background-color: var(--admin-warning);"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="admin-stat-item">
+                                    <div class="admin-stat-label">LINE Bot 狀態</div>
+                                    <div class="admin-stat-value admin-text-success">在線</div>
+                                    <div class="admin-stat-bar">
+                                        <div class="admin-stat-progress" style="width: 100%; background-color: var(--admin-success);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用戶管理頁面 -->
+            <div id="usersPage" class="admin-page">
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-4">
+                    <div>
+                        <h2 class="admin-font-bold admin-text-2xl admin-mb-1">用戶管理</h2>
+                        <p style="color: var(--text-gray-medium);">管理系統用戶和權限</p>
+                    </div>
+                    <button class="admin-btn admin-btn-primary" onclick="openUserModal()">
+                        <i class="fas fa-plus"></i>
+                        新增用戶
+                    </button>
+                </div>
+                
+                <!-- 搜尋和篩選 -->
+                <div class="admin-card admin-mb-4">
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-4 admin-gap-3">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">搜尋</label>
+                                <input type="text" class="admin-form-input" placeholder="搜尋用戶名、姓名或郵件">
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">角色</label>
+                                <select class="admin-form-select">
+                                    <option value="">全部角色</option>
+                                    <option value="admin">管理員</option>
+                                    <option value="boss">老闆</option>
+                                    <option value="site-manager">工地經理</option>
+                                    <option value="client">客戶</option>
+                                </select>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">狀態</label>
+                                <select class="admin-form-select">
+                                    <option value="">全部狀態</option>
+                                    <option value="active">啟用</option>
+                                    <option value="inactive">停用</option>
+                                </select>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">操作</label>
+                                <button class="admin-btn admin-btn-primary admin-w-full">
+                                    <i class="fas fa-search"></i>
+                                    搜尋
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 批量操作工具列 -->
+                <div class="admin-card admin-mb-4" id="batchOperationsPanel" style="display: none;">
+                    <div class="admin-card-body">
+                        <div class="admin-flex admin-items-center admin-justify-between">
+                            <div class="admin-flex admin-items-center admin-gap-2">
+                                <span class="admin-text-sm">已選擇 <span id="selectedCount">0</span> 個用戶</span>
+                            </div>
+                            <div class="admin-flex admin-gap-2">
+                                <!-- 批量選擇快捷按鈕 -->
+                                <div class="admin-btn-group">
+                                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="selectAllUsers()">
+                                        全選
+                                    </button>
+                                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="selectByRole('admin')">
+                                        管理員
+                                    </button>
+                                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="selectByRole('site-manager')">
+                                        工地經理
+                                    </button>
+                                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="selectByStatus('active')">
+                                        啟用中
+                                    </button>
+                                </div>
+                                
+                                <!-- 批量操作按鈕 -->
+                                <div class="admin-btn-group">
+                                    <button class="admin-btn admin-btn-success admin-btn-sm" onclick="batchOperation('activate')">
+                                        <i class="fas fa-check-circle"></i> 啟用
+                                    </button>
+                                    <button class="admin-btn admin-btn-warning admin-btn-sm" onclick="batchOperation('deactivate')">
+                                        <i class="fas fa-pause-circle"></i> 停用
+                                    </button>
+                                    <button class="admin-btn admin-btn-info admin-btn-sm" onclick="batchOperation('export')">
+                                        <i class="fas fa-download"></i> 匯出
+                                    </button>
+                                    <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="batchOperation('assign-permissions')">
+                                        <i class="fas fa-key"></i> 權限分配
+                                    </button>
+                                    <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="batchOperation('delete')">
+                                        <i class="fas fa-trash"></i> 刪除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 用戶列表 -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">用戶列表</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-btn admin-btn-secondary admin-btn-sm">
+                                <i class="fas fa-download"></i>
+                                匯出
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-card-body admin-p-0">
+                        <div class="admin-table-container">
+                            <table class="admin-table" id="usersTable">
+                                <thead class="admin-table-header">
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" class="admin-checkbox">
+                                        </th>
+                                        <th>用戶名</th>
+                                        <th>姓名</th>
+                                        <th>郵件</th>
+                                        <th>角色</th>
+                                        <th>狀態</th>
+                                        <th>建立時間</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="admin-table-body">
+                                    <!-- 將由 JavaScript 動態載入 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 員工管理頁面 (卡片式) -->
+            <div id="employeeManagementPage" class="admin-page">
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-4">
+                    <div>
+                        <h2 class="admin-font-bold admin-text-2xl admin-mb-1">員工管理</h2>
+                        <p style="color: var(--text-gray-medium);">管理員工班表、權限和基本資料</p>
+                    </div>
+                    <div class="admin-flex admin-gap-2">
+                        <button class="admin-btn admin-btn-secondary" onclick="adminPanel.openScheduleTemplateModal()">
+                            <i class="fas fa-calendar-alt"></i>
+                            管理班表模板
+                        </button>
+                        <button class="admin-btn admin-btn-primary" onclick="openUserModal()">
+                            <i class="fas fa-plus"></i>
+                            新增員工
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 搜尋和篩選 -->
+                <div class="admin-card admin-mb-4">
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-4 admin-gap-3">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">搜尋</label>
+                                <input type="text" class="admin-form-input" placeholder="搜尋用戶名或姓名">
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">角色</label>
+                                <select class="admin-form-select">
+                                    <option value="">全部角色</option>
+                                    <option value="admin">管理員</option>
+                                    <option value="boss">老闆</option>
+                                    <option value="site-manager">工地經理</option>
+                                    <option value="client">客戶</option>
+                                </select>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">狀態</label>
+                                <select class="admin-form-select">
+                                    <option value="">全部狀態</option>
+                                    <option value="active">啟用</option>
+                                    <option value="inactive">停用</option>
+                                </select>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">操作</label>
+                                <button class="admin-btn admin-btn-primary admin-w-full">
+                                    <i class="fas fa-search"></i>
+                                    搜尋
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 員工卡片網格 -->
+                <div id="employeeCardGrid" class="admin-grid admin-grid-4 admin-gap-4">
+                    <!-- 員工卡片將由 JavaScript 動態載入 -->
+                </div>
+            </div>
+            
+            <!-- 工地管理頁面 -->
+            <div id="sitesPage" class="admin-page">
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-4">
+                    <div>
+                        <h2 class="admin-font-bold admin-text-2xl admin-mb-1">工地管理</h2>
+                        <p style="color: var(--text-gray-medium);">管理工地資訊和狀態</p>
+                    </div>
+                    <button class="admin-btn admin-btn-primary" onclick="openSiteModal()">
+                        <i class="fas fa-plus"></i>
+                        新增工地
+                    </button>
+                </div>
+                
+                <!-- 搜尋和篩選 -->
+                <div class="admin-card admin-mb-4">
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-4 admin-gap-3">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">搜尋</label>
+                                <input type="text" class="admin-form-input" placeholder="搜尋工地名稱或地址">
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">狀態</label>
+                                <select class="admin-form-select">
+                                    <option value="">全部狀態</option>
+                                    <option value="building">在建中</option>
+                                    <option value="completed">完工</option>
+                                </select>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">負責人</label>
+                                <select class="admin-form-select">
+                                    <option value="">全部負責人</option>
+                                    <option value="manager1">工地經理1</option>
+                                    <option value="manager2">工地經理2</option>
+                                </select>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">操作</label>
+                                <button class="admin-btn admin-btn-primary admin-w-full">
+                                    <i class="fas fa-search"></i>
+                                    搜尋
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 工地列表 -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">工地列表</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-btn admin-btn-secondary admin-btn-sm">
+                                <i class="fas fa-download"></i>
+                                匯出
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-card-body admin-p-0">
+                        <div class="admin-table-container">
+                            <table class="admin-table" id="sitesTable">
+                                <thead class="admin-table-header">
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" class="admin-checkbox">
+                                        </th>
+                                        <th>工地名稱</th>
+                                        <th>地址</th>
+                                        <th>負責人</th>
+                                        <th>狀態</th>
+                                        <th>建立時間</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="admin-table-body">
+                                    <!-- 將由 JavaScript 動態載入 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="permissionsPage" class="admin-page">
+                <h2>權限管理</h2>
+                <p>權限管理功能開發中...</p>
+            </div>
+            
+            <div id="systemPage" class="admin-page">
+                <h2>系統監控</h2>
+                <p>系統監控功能開發中...</p>
+            </div>
+            
+            <div id="linePage" class="admin-page">
+                <h2>LINE Bot 管理</h2>
+                <p>LINE Bot 管理功能開發中...</p>
+            </div>
+            
+            <!-- 待處理問題分類頁面 -->
+            <div id="issuesPage" class="admin-page">
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-4">
+                    <div>
+                        <h2 class="admin-font-bold admin-text-2xl admin-mb-1">待處理問題</h2>
+                        <p style="color: var(--text-gray-medium);">問題分類和處理狀態</p>
+                    </div>
+                    <button class="admin-btn admin-btn-primary">
+                        <i class="fas fa-sync-alt"></i>
+                        重新整理
+                    </button>
+                </div>
+                
+                <!-- 問題分類卡片 -->
+                <div class="admin-grid admin-grid-2 admin-gap-4">
+                    <!-- 資料問題 -->
+                    <div class="admin-card admin-clickable" onclick="showIssueCategory('data')">
+                        <div class="admin-card-body">
+                            <div class="admin-flex admin-items-center admin-gap-3">
+                                <div class="issue-category-icon admin-bg-danger">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <div class="admin-flex-1">
+                                    <h3 class="admin-font-semibold admin-mb-1">資料問題</h3>
+                                    <p class="admin-text-sm" style="color: var(--text-gray-medium);">
+                                        資料庫出錯、數值異常、格式不符等
+                                    </p>
+                                    <div class="admin-mt-2">
+                                        <span class="admin-status admin-status-danger" id="dataIssuesCount">0 個問題</span>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right" style="color: var(--text-gray-medium);"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 業務流程問題 -->
+                    <div class="admin-card admin-clickable" onclick="showIssueCategory('workflow')">
+                        <div class="admin-card-body">
+                            <div class="admin-flex admin-items-center admin-gap-3">
+                                <div class="issue-category-icon admin-bg-warning">
+                                    <i class="fas fa-project-diagram"></i>
+                                </div>
+                                <div class="admin-flex-1">
+                                    <h3 class="admin-font-semibold admin-mb-1">業務流程問題</h3>
+                                    <p class="admin-text-sm" style="color: var(--text-gray-medium);">
+                                        待審核日報、逾期日報、權限異常等
+                                    </p>
+                                    <div class="admin-mt-2">
+                                        <span class="admin-status admin-status-warning" id="workflowIssuesCount">0 個問題</span>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right" style="color: var(--text-gray-medium);"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 系統技術問題 -->
+                    <div class="admin-card admin-clickable" onclick="showIssueCategory('system')">
+                        <div class="admin-card-body">
+                            <div class="admin-flex admin-items-center admin-gap-3">
+                                <div class="issue-category-icon admin-bg-info">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <div class="admin-flex-1">
+                                    <h3 class="admin-font-semibold admin-mb-1">系統技術問題</h3>
+                                    <p class="admin-text-sm" style="color: var(--text-gray-medium);">
+                                        API 失敗、系統異常、LINE Bot 失敗等
+                                    </p>
+                                    <div class="admin-mt-2">
+                                        <span class="admin-status admin-status-info" id="systemIssuesCount">0 個問題</span>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right" style="color: var(--text-gray-medium);"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用戶相關問題 -->
+                    <div class="admin-card admin-clickable" onclick="showIssueCategory('user')">
+                        <div class="admin-card-body">
+                            <div class="admin-flex admin-items-center admin-gap-3">
+                                <div class="issue-category-icon admin-bg-success">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+                                <div class="admin-flex-1">
+                                    <h3 class="admin-font-semibold admin-mb-1">用戶相關問題</h3>
+                                    <p class="admin-text-sm" style="color: var(--text-gray-medium);">
+                                        用戶回報、密碼重置、權限變更等
+                                    </p>
+                                    <div class="admin-mt-2">
+                                        <span class="admin-status admin-status-success" id="userIssuesCount">0 個問題</span>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right" style="color: var(--text-gray-medium);"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 問題詳細列表頁面 -->
+            <div id="issueDetailPage" class="admin-page">
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-4">
+                    <div class="admin-flex admin-items-center admin-gap-3">
+                        <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="backToIssues()">
+                            <i class="fas fa-arrow-left"></i>
+                            返回
+                        </button>
+                        <div>
+                            <h2 class="admin-font-bold admin-text-2xl admin-mb-1" id="issueCategoryTitle">問題列表</h2>
+                            <p style="color: var(--text-gray-medium);" id="issueCategoryDesc">問題詳細列表</p>
+                        </div>
+                    </div>
+                    <div class="admin-flex admin-gap-2">
+                        <button class="admin-btn admin-btn-success admin-btn-sm">
+                            <i class="fas fa-check-circle"></i>
+                            全部標記已解決
+                        </button>
+                        <button class="admin-btn admin-btn-primary">
+                            <i class="fas fa-sync-alt"></i>
+                            重新整理
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 問題列表表格 -->
+                <div class="admin-card">
+                    <div class="admin-card-body admin-p-0">
+                        <div class="admin-table-container">
+                            <table class="admin-table" id="issueDetailTable">
+                                <thead class="admin-table-header">
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" class="admin-checkbox">
+                                        </th>
+                                        <th>問題描述</th>
+                                        <th>嚴重程度</th>
+                                        <th>相關模組</th>
+                                        <th>發生時間</th>
+                                        <th>狀態</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="admin-table-body">
+                                    <!-- 將由 JavaScript 動態載入 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 用戶編輯模態框 -->
+    <div id="userModal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">新增用戶</h3>
+                <button class="admin-modal-close" onclick="closeUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-modal-body">
+                <form id="userForm">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">用戶名</label>
+                        <input type="text" class="admin-form-input" name="username" required>
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">姓名</label>
+                        <input type="text" class="admin-form-input" name="name" required>
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">郵件</label>
+                        <input type="email" class="admin-form-input" name="email" required>
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">電話</label>
+                        <input type="tel" class="admin-form-input" name="phone">
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">角色</label>
+                        <select class="admin-form-select" name="role" required>
+                            <option value="">請選擇角色</option>
+                            <option value="admin">管理員</option>
+                            <option value="boss">老闆</option>
+                            <option value="site-manager">工地經理</option>
+                            <option value="client">客戶</option>
+                        </select>
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">密碼</label>
+                        <input type="password" class="admin-form-input" name="password" required>
+                        <span class="admin-form-help">密碼至少 8 個字元，包含英文和數字</span>
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">確認密碼</label>
+                        <input type="password" class="admin-form-input" name="confirmPassword" required>
+                        <span class="admin-form-error"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" class="admin-btn admin-btn-secondary" onclick="closeUserModal()">
+                    取消
+                </button>
+                <button type="button" class="admin-btn admin-btn-primary" onclick="saveUser()">
+                    儲存
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    </div>
+    </div>
+
+    <!-- 班表模板管理模態框 -->
+    <div id="scheduleTemplateModal" class="admin-modal">
+        <div class="admin-modal-content admin-modal-lg">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">管理班表模板</h3>
+                <button class="admin-modal-close" onclick="adminPanel.closeScheduleTemplateModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-modal-body">
+                <div class="admin-flex admin-justify-end admin-mb-3">
+                    <button class="admin-btn admin-btn-primary" onclick="adminPanel.openTemplateEditModal()">
+                        <i class="fas fa-plus"></i> 新增模板
+                    </button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table" id="scheduleTemplatesTable">
+                        <thead class="admin-table-header">
+                            <tr>
+                                <th>模板名稱</th>
+                                <th>類型</th>
+                                <th>說明</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="admin-table-body">
+                            <!-- 模板列表將由 JavaScript 動態載入 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 員工個人班表設定模態框 -->
+    <div id="employeeScheduleModal" class="admin-modal">
+        <div class="admin-modal-content admin-modal-xl">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title" id="employeeScheduleModalTitle">員工班表設定</h3>
+                <button class="admin-modal-close" onclick="adminPanel.closeEmployeeScheduleModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-modal-body">
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-3">
+                    <!-- 月份選擇器 -->
+                    <div class="admin-flex admin-items-center admin-gap-2">
+                        <button class="admin-btn admin-btn-secondary" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+                        <h4 id="calendarMonthYear" class="admin-font-semibold admin-text-lg"></h4>
+                        <button class="admin-btn admin-btn-secondary" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <!-- 模板套用 -->
+                    <div class="admin-flex admin-items-center admin-gap-2">
+                        <select class="admin-form-select" id="scheduleTemplateSelector">
+                            <option value="">套用班表模板</option>
+                            <!-- 模板選項將由 JavaScript 動態載入 -->
+                        </select>
+                        <button class="admin-btn admin-btn-primary" id="applyTemplateBtn">套用</button>
+                    </div>
+                </div>
+
+                <!-- 日曆容器 -->
+                <div id="scheduleCalendar" class="schedule-calendar">
+                    <div class="calendar-header">
+                        <div>日</div>
+                        <div>一</div>
+                        <div>二</div>
+                        <div>三</div>
+                        <div>四</div>
+                        <div>五</div>
+                        <div>六</div>
+                    </div>
+                    <div class="calendar-body" id="calendarBody">
+                        <!-- 日期將由 JavaScript 動態生成 -->
+                    </div>
+                </div>
+
+                <!-- 圖例 -->
+                <div class="calendar-legend admin-mt-3">
+                    <div class="legend-item"><span class="legend-color work-day"></span> 工作日</div>
+                    <div class="legend-item"><span class="legend-color rest-day"></span> 休息日</div>
+                    <div class="legend-item"><span class="legend-color no-data"></span> 無記錄</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 載入 -->
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/pages/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded fired');
+            console.log('api available:', typeof api !== 'undefined');
+            console.log('auth available:', typeof auth !== 'undefined');
+            
+            // 等待所有必要的模組載入
+            function waitForModules() {
+                if (typeof api === 'undefined' || typeof auth === 'undefined') {
+                    console.log('Waiting for modules to load...');
+                    setTimeout(waitForModules, 100);
+                    return;
+                }
+                
+                console.log('All modules loaded, starting auth check...');
+                
+                // 使用標準認證流程來初始化管理員面板
+                auth.initializeAuthCheck(
+                    (user) => {
+                        // 認證成功且為管理員，初始化面板
+                        console.log('Admin access granted for:', user.username);
+                        
+                        // 顯示管理員內容
+                        const adminLayout = document.querySelector('.admin-layout');
+                        if (adminLayout) {
+                            adminLayout.style.setProperty('display', 'flex', 'important');
+                            console.log('Admin layout displayed');
+                        }
+                        
+                        // 初始化管理員面板
+                        if (typeof AdminPanel !== 'undefined') {
+                            window.adminPanel = new AdminPanel();
+                            window.adminPanel.init(user);
+                        } else {
+                            console.warn('AdminPanel class not available');
+                        }
+                    },
+                    () => {
+                        // 認證失敗的處理
+                        console.warn('Admin access denied. Auth module is handling the UI.');
+                        
+                        // 隱藏管理員內容，但保持 body 可見以顯示登入彈窗
+                        const adminLayout = document.querySelector('.admin-layout');
+                        if (adminLayout) {
+                            adminLayout.style.display = 'none';
+                        }
+                    },
+                    true // 第三個參數 true 代表要求管理員權限
+                );
+            }
+            
+            // 開始等待模組載入
+            waitForModules();
+        });
+    </script>
+    
+    <style>
+        /* 額外的頁面專用樣式 */
+        .admin-page {
+            display: none;
+        }
+        
+        .admin-page.active {
+            display: block;
+        }
+        
+        /* 預設隱藏管理員內容，等待認證 */
+        .admin-layout {
+            display: none !important;
+        }
+        
+        /* 認證成功後會通過 JavaScript 設定為 flex */
+        
+        .admin-grid {
+            display: grid;
+            gap: var(--admin-space-3);
+        }
+        
+        .admin-grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .admin-grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        .admin-grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        @media (max-width: 1200px) {
+            .admin-grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .admin-grid-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-grid-2,
+            .admin-grid-3,
+            .admin-grid-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 活動列表樣式 */
+        .admin-activity-list {
+            padding: var(--admin-space-2);
+        }
+        
+        .admin-activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--admin-space-2);
+            padding: var(--admin-space-2);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .admin-activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .admin-activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.875rem;
+        }
+        
+        .admin-activity-content {
+            flex: 1;
+        }
+        
+        .admin-activity-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .admin-activity-desc {
+            color: var(--text-gray-medium);
+            font-size: var(--admin-font-sm);
+            margin-bottom: 0.25rem;
+        }
+        
+        .admin-activity-time {
+            color: var(--text-gray-medium);
+            font-size: var(--admin-font-xs);
+        }
+        
+        /* 系統統計樣式 */
+        .admin-system-stats {
+            display: flex;
+            flex-direction: column;
+            gap: var(--admin-space-3);
+        }
+        
+        .admin-stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--admin-space-1);
+        }
+        
+        .admin-stat-label {
+            font-size: var(--admin-font-sm);
+            color: var(--text-gray-medium);
+        }
+        
+        .admin-stat-value {
+            font-weight: 600;
+            font-size: var(--admin-font-lg);
+        }
+        
+        .admin-stat-bar {
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .admin-stat-progress {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        /* 複選框樣式 */
+        .admin-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background-color: var(--card-bg);
+            cursor: pointer;
+        }
+        
+        .admin-checkbox:checked {
+            background-color: var(--admin-primary);
+            border-color: var(--admin-primary);
+        }
+        
+        /* 問題分類相關樣式 */
+        .issue-category-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+        
+        /* 可點擊卡片樣式 */
+        .admin-clickable {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .admin-clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 背景色工具類 */
+        .admin-bg-danger {
+            background-color: var(--admin-danger);
+        }
+        
+        .admin-bg-warning {
+            background-color: var(--admin-warning);
+        }
+        
+        .admin-bg-info {
+            background-color: var(--admin-info);
+        }
+        
+        .admin-bg-success {
+            background-color: var(--admin-success);
+        }
+        
+        /* Flex 工具類 */
+        .admin-flex-1 {
+            flex: 1;
+        }
+        
+        .admin-gap-4 {
+            gap: var(--admin-space-4, 1rem);
+        }
+        
+        /* 按鈕組樣式 */
+        .admin-btn-group {
+            display: flex;
+            gap: 0;
+        }
+        
+        .admin-btn-group .admin-btn {
+            border-radius: 0;
+        }
+        
+        .admin-btn-group .admin-btn:first-child {
+            border-top-left-radius: var(--admin-border-radius, 4px);
+            border-bottom-left-radius: var(--admin-border-radius, 4px);
+        }
+        
+        .admin-btn-group .admin-btn:last-child {
+            border-top-right-radius: var(--admin-border-radius, 4px);
+            border-bottom-right-radius: var(--admin-border-radius, 4px);
+        }
+        
+        .admin-btn-group .admin-btn + .admin-btn {
+            border-left: none;
+        }
+        
+        .admin-gap-2 {
+            gap: var(--admin-space-2, 0.5rem);
+        }
+
+        /* 日曆樣式 */
+        .schedule-calendar {
+            border: 1px solid var(--border-color);
+            border-radius: var(--admin-radius-md);
+            overflow: hidden;
+        }
+        .calendar-header, .calendar-body {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+        }
+        .calendar-header > div {
+            padding: var(--admin-space-1);
+            font-weight: 600;
+            background: var(--bg-main-light);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .calendar-day {
+            padding: var(--admin-space-1);
+            height: 80px; /* 增加高度以容納內容 */
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: var(--admin-font-sm);
+        }
+        .calendar-day:nth-child(7n) {
+            border-right: none;
+        }
+        .calendar-day.empty {
+            background-color: var(--bg-main-light);
+            cursor: default;
+        }
+        .calendar-day.work-day {
+            background-color: rgba(var(--admin-primary-rgb), 0.2);
+        }
+        .calendar-day.rest-day {
+            background-color: rgba(var(--admin-secondary-rgb), 0.2);
+        }
+        .calendar-day.no-data:not(.empty):hover {
+            background-color: var(--border-color);
+        }
+        .calendar-legend {
+            display: flex;
+            gap: var(--admin-space-3);
+            font-size: var(--admin-font-sm);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--admin-space-1);
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        .legend-color.work-day { background-color: rgba(var(--admin-primary-rgb), 0.4); }
+        .legend-color.rest-day { background-color: rgba(var(--admin-secondary-rgb), 0.4); }
+        .legend-color.no-data { border: 1px solid var(--border-color); }
+
+        .loading-spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--admin-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>

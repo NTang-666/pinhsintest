@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品信工務系統</title>
+    <link rel="stylesheet" href="assets/css/common.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        .welcome-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            color: #2c5aa0;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .description {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .nav-card {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .nav-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .nav-card h3 {
+            margin: 0 0 10px 0;
+            color: #2c5aa0;
+        }
+        
+        .nav-card p {
+            margin: 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .line-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 30px;
+        }
+        
+        .line-info h4 {
+            margin: 0 0 10px 0;
+            color: #2c5aa0;
+        }
+        
+        @media (max-width: 768px) {
+            .welcome-container {
+                margin: 20px;
+                padding: 15px;
+            }
+            
+            .logo {
+                font-size: 2em;
+            }
+            
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="logo">🏗️ 品信工務系統</div>
+        
+        <div class="description">
+            專業的工地管理系統，提供日報管理、照片上傳、進度追蹤等完整功能。
+            <br>支援電腦網頁和 LINE 行動應用雙平台使用。
+        </div>
+        
+        <div class="nav-grid">
+            <a href="pages/report-input.html" class="nav-card">
+                <h3>📝 日報輸入</h3>
+                <p>建立和編輯工地日報，記錄工作內容和人員出勤</p>
+            </a>
+            
+            <a href="pages/工地儀表板.html" class="nav-card">
+                <h3>📊 工地儀表板</h3>
+                <p>總覽工地狀況，查看進度和統計資訊</p>
+            </a>
+            
+            <a href="pages/工程查驗.html" class="nav-card">
+                <h3>🔍 工程查驗</h3>
+                <p>執行工程品質檢查和驗收作業</p>
+            </a>
+            
+            <a href="pages/工程進度表.html" class="nav-card">
+                <h3>📅 工程進度</h3>
+                <p>規劃和追蹤工程時程與里程碑</p>
+            </a>
+            
+            <a href="pages/boss_dashboard.html" class="nav-card">
+                <h3>👔 主管儀表板</h3>
+                <p>高階主管專用的綜合管理介面</p>
+            </a>
+            
+            <a href="line-entry.html" class="nav-card">
+                <h3>📱 LINE 入口</h3>
+                <p>LINE LIFF 應用程式入口頁面</p>
+            </a>
+        </div>
+        
+        <div class="line-info">
+            <h4>📱 LINE Bot 整合</h4>
+            <p>本系統已整合 LINE Bot 功能，現場人員可直接透過 LINE 應用程式使用系統功能，包含日報建立、照片上傳等。</p>
+        </div>
+        
+        <div style="margin-top: 30px; font-size: 0.9em; color: #999;">
+            品信工務系統 v2.4.0 | 部署於 Vercel
+        </div>
+    </div>
+
+    <script src="assets/js/auth.js"></script>
+    <script>
+        // 檢查是否在 LIFF 環境中
+        if (window.location.search.includes('liff')) {
+            // 如果有 LIFF 參數，跳轉到對應頁面
+            const urlParams = new URLSearchParams(window.location.search);
+            const page = urlParams.get('page');
+            
+            if (page === 'input') {
+                window.location.href = 'pages/report-input.html';
+            } else if (page === 'dashboard') {
+                window.location.href = 'pages/工地儀表板.html';
+            }
+        }
+        
+        // 初始化認證檢查
+        document.addEventListener('DOMContentLoaded', function() {
+            // 這裡可以加入認證狀態檢查
+            console.log('品信工務系統已載入');
+        });
+    </script>
+</body>
+</html>

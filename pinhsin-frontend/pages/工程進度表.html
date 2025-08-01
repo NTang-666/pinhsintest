@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品信工務系統 - 工程進度表 (v5.1 - 導航修正)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../assets/css/pages/schedule.css">
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="overlay" id="overlay"></div>
+
+        <div id="pageSelectSiteForSchedule" class="page active">
+             <header> {/* This header uses styles from schedule.css #pageSelectSiteForSchedule header */ }
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.37 3.414-1.414 3.414H4.828c-1.784 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                <h1 class="text-xl font-bold">選擇進度表工地</h1>
+            </header>
+            <main class="content-area">
+                <div class="card site-schedule-card" data-site-id="siteA" data-site-name="工地A：市中心建案">
+                    <h2 class="text-lg font-bold text-main mb-1">工地A：市中心建案</h2>
+                    <p class="text-xs text-secondary flex items-center">
+                        <i class="fas fa-tasks fa-fw mr-1.5"></i>目前工項: 結構體模板組立
+                    </p>
+                    <p class="text-xs text-secondary flex items-center">
+                        <i class="far fa-calendar-alt fa-fw mr-1.5"></i>剩餘工期: 120 天
+                    </p>
+                    <button class="mt-2 text-sm font-medium text-accent w-full text-right">查看進度表 ></button>
+                </div>
+                <div class="card site-schedule-card" data-site-id="siteB" data-site-name="工地B：山區別墅區">
+                    <h2 class="text-lg font-bold text-main mb-1">工地B：山區別墅區</h2>
+                     <p class="text-xs text-secondary flex items-center">
+                        <i class="fas fa-tasks fa-fw mr-1.5"></i>目前工項: 擋土牆施作
+                    </p>
+                    <p class="text-xs text-secondary flex items-center">
+                        <i class="far fa-calendar-alt fa-fw mr-1.5"></i>剩餘工期: 95 天
+                    </p>
+                    <button class="mt-2 text-sm font-medium text-accent w-full text-right">查看進度表 ></button>
+                </div>
+            </main>
+        </div>
+
+        <div id="pageGanttMain" class="page">
+            <header class="page-header-schedule">
+                <div class="title-group">
+                    <button class="btn-icon back-button mr-1" data-target-page="pageSelectSiteForSchedule">
+                        <i class="fas fa-arrow-left text-accent"></i>
+                    </button>
+                    <h1 id="ganttPageTitle" class="text-lg font-bold text-main">工地A - 進度表</h1>
+                </div>
+                <div class="actions-group">
+                    <button class="btn-icon mr-1" id="searchTaskBtn"><i class="fas fa-search"></i></button>
+                    <button class="btn btn-outline-accent" id="addTaskBtn">新增</button>
+                </div>
+            </header>
+            <div class="p-2 border-b border-gray-200 hidden" id="searchBarArea">
+                <input type="text" placeholder="搜尋工項名稱..." class="form-input text-sm">
+            </div>
+            <div class="gantt-container">
+                <div class="gantt-chart-area-schedule">
+                    <div class="gantt-timeline-header-schedule" id="ganttDatesHeader"></div>
+                    <div class="gantt-tasks-area-schedule" id="ganttTasksArea"></div>
+                </div>
+            </div>
+            <div class="flex flex-col sticky bottom-0 z-5">
+                <footer class="time-scale-footer bottom-bar">
+                    <button class="btn-icon text-gray-500" id="ganttPrevPeriodBtn" style="padding: 0.5rem;"><</button>
+                    <div class="modern-segmented-control mx-2">
+                        <button class="gantt-scale-btn active" data-scale="month">月</button>
+                        <button class="gantt-scale-btn" data-scale="week">週</button>
+                        <button class="gantt-scale-btn" data-scale="day">日</button>
+                    </div>
+                    <button class="btn-icon text-gray-500" id="ganttNextPeriodBtn" style="padding: 0.5rem;">></button>
+                </footer>
+                <div class="actions-footer bottom-bar">
+                    <button class="btn-icon-text" id="showTaskListPanelBtn">
+                        <i class="fas fa-clipboard-list"></i>項目詳細
+                    </button>
+                    <button class="btn-icon-text" id="showPaymentSchedulePanelBtn">
+                        <i class="fas fa-file-invoice-dollar"></i>請款進度
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="paymentSchedulePanel" class="side-panel right">
+            <div class="side-panel-header">
+                <h2 class="text-md font-bold text-main">請款進度表</h2>
+                <button class="btn-icon close-panel-btn" data-panel-id="paymentSchedulePanel"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="side-panel-content space-y-3">
+                <div class="p-3 border rounded-md bg-gray-50">
+                    <p class="font-medium text-sm text-main">期別1: 基礎工程</p>
+                    <p class="text-xs text-secondary">金額: $XXX,XXX</p>
+                    <p class="text-xs text-green-600 font-medium">狀態: 已付款</p>
+                </div>
+                <div class="p-3 border rounded-md bg-gray-50">
+                    <p class="font-medium text-sm text-main">期別2: 結構體</p>
+                    <p class="text-xs text-secondary">金額: $YYY,YYY</p>
+                    <p class="text-xs text-orange-500 font-medium">狀態: 待請款</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="taskListPanel" class="side-panel left">
+            <div class="side-panel-header">
+                 <button class="btn-icon close-panel-btn" data-panel-id="taskListPanel"><i class="fas fa-times"></i></button>
+                <h2 class="text-md font-bold text-main flex-grow text-right">工程項目清單</h2>
+            </div>
+            <div class="side-panel-content">
+                 <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-2 text-left font-medium text-gray-600">工項</th>
+                                <th class="p-2 text-left font-medium text-gray-600">開始</th>
+                                <th class="p-2 text-left font-medium text-gray-600">結束</th>
+                                <th class="p-2 text-left font-medium text-gray-600">前置</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="taskDetailTableBody">
+                            <tr><td colspan="4" class="p-2 text-center text-gray-500">點擊甘特圖上的工項以查看詳細資料或從此處加載。</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="pageAddTask" class="page slide-in">
+            <header class="page-header-schedule">
+                <div class="title-group">
+                    <button class="btn-icon back-button mr-1" data-target-page="pageGanttMain" data-is-form="true">
+                        <i class="fas fa-arrow-left text-accent"></i>
+                    </button>
+                    <h1 class="text-lg font-bold text-main">新增工項</h1>
+                </div>
+                <div class="actions-group">
+                    <button class="btn-icon" id="saveTaskBtn"><i class="fas fa-check text-accent text-xl"></i></button>
+                </div>
+            </header>
+            <main class="content-area space-y-4">
+                <div class="form-group">
+                    <label for="taskName" class="form-label">工項名稱*</label>
+                    <input type="text" id="taskName" name="taskName" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="taskCategory" class="form-label">所屬大項 (用於顏色標註)</label>
+                    <select id="taskCategory" name="taskCategory" class="form-select">
+                        <option value="cat1">結構工程 (主藍)</option>
+                        <option value="cat2">裝修工程 (天藍)</option>
+                        <option value="cat3">水電工程 (青綠)</option>
+                        <option value="cat4">雜項工程 (橘色)</option>
+                        <option value="cat5">其他 (薰衣草紫)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">起迄時間*</label>
+                    <div class="date-range-picker">
+                        <input type="date" id="taskStartDate" name="taskStartDate" class="form-input">
+                        <input type="date" id="taskEndDate" name="taskEndDate" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="taskPredecessor" class="form-label">前置作業 (選填)</label>
+                    <input type="text" id="taskPredecessor" name="taskPredecessor" class="form-input" placeholder="輸入前置工項名稱或編號">
+                </div>
+                <div class="form-group">
+                    <label for="taskNotes" class="form-label">備註</label>
+                    <textarea id="taskNotes" name="taskNotes" rows="3" class="form-textarea"></textarea>
+                </div>
+            </main>
+             <footer class="action-footer">
+                <button id="saveTaskBtnFooter" class="btn btn-primary w-full">確認新增</button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="../assets/js/utils/navigation.js"></script>
+    <script src="../assets/js/utils/form-handler.js"></script>
+    <!-- gantt.js 已經被 schedule.js 導入，所以這裡只需要引入 schedule.js -->
+    <script type="module" src="../assets/js/pages/schedule.js"></script>
+    <script>
+    // document.addEventListener('DOMContentLoaded', function() {
+        // 所有特定於此頁面的 JavaScript 邏輯（包括甘特圖的實例化、
+        // 數據管理、事件處理等）都已移至 ../assets/js/pages/schedule.js
+        
+        // utils/navigation.js 和 utils/form-handler.js 中的函數
+        // 應該由 schedule.js 內部按需導入或假設為全局可用（取決於它們的實現方式）。
+        // 此處的內聯腳本可以被完全移除或只保留極少數無法模組化的全局設置（如果有的話）。
+        // 為了乾淨，我們假設所有相關邏輯都已成功遷移。
+    // });
+    </script>
+</body>
+</html>

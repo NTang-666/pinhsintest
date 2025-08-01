@@ -1,0 +1,223 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+
+:root {
+    --page-bg: #f8f9fa;
+    --card-bg: #FFFFFF;
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-tertiary: #6c757d;
+    --border-color: #dee2e6;
+    --accent-blue: #007bff;
+    --accent-green: #28a745;
+    --accent-red: #dc3545;
+    --accent-orange: #fd7e14;
+    /* New variables from 工地儀表板.html */
+    --page-bg-light: #F2F4F7;
+    --text-main-dark: #131415;
+    --accent-blue-primary: #1A73E8;
+    --accent-blue-dark: #03369D;
+    --bg-blue-light: #DFE9FF;
+    --text-gray-dark: #485666;
+    --text-gray-medium: #767A8C;
+    /* --bg-card-white: #FFFFFF; /* Same as --card-bg */
+    --bg-gray-light-accent: #DBE1EB;
+    --status-warning-color: #FFC107;
+    /* Variables from 工程查驗.html analysis */
+    --page-bg-alt: #E5E7EB;
+    --text-primary-alt: #1F2937;
+    --border-color-medium: #D1D5DB;
+    --accent-blue-strong: #3382ED;
+    --text-icon-default: #4B5563;
+    --text-secondary-alt: #6B7280;
+    --card-bg-hover-light: #f9fafb;
+    /* Added from 工程進度表.html analysis */
+    --bg-accent-blue-hover-light: #DFE9FF;
+    --gantt-cat2-color: #00A9E0;
+    --gantt-cat3-color: #00CFB4;
+    --gantt-cat4-color: #FF8200;
+    --gantt-cat5-color: #8B7AFF;
+}
+
+body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background-color: var(--page-bg-alt); /* Updated to use specific variable from 工程查驗.html */
+    color: var(--text-primary-alt);    /* Updated to use specific variable from 工程查驗.html */
+    margin: 0; /* Added */
+    overscroll-behavior-y: contain;
+}
+
+.mobile-container {
+    max-width: 430px; /* Max width can be 420px or 430px, using 430 from common.css */
+    min-height: 100vh;
+    margin: 0 auto;
+    background-color: var(--page-bg-alt); /* Updated */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.07);
+}
+
+.page {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: var(--page-bg-alt); /* Updated */
+    transition: transform 0.3s ease-in-out; /* Added */
+}
+.page.active {
+    display: flex;
+    position: relative; /* Keeping this, as absolute pages are handled by .page */
+    transform: translateX(0%); /* Added */
+    z-index: 1; /* Added */
+}
+
+/* LIFF 環境專用樣式 - 確保只顯示活躍頁面 */
+.liff-environment .page:not(.active) {
+    display: none !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
+}
+
+.liff-environment .page.active {
+    display: flex !important;
+    visibility: visible !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+}
+
+/* LIFF 環境下的容器優化 */
+.liff-environment .mobile-container {
+    overflow: hidden;
+    position: relative;
+}
+
+/* LIFF 專用的頁面切換動畫禁用 */
+.liff-environment .page {
+    transition: none !important;
+    transform: none !important;
+}
+
+.page-header {
+    background-color: var(--card-bg); /* Default, can be overridden by page-specific CSS */
+    color: var(--text-primary); /* Default, can be overridden */
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    /* justify-content: space-between; /* Removed for new flex layout */
+    position: sticky;
+    top: 0;
+    z-index: 10; /* Adjusted from 100 to match inspection.html, can be fine-tuned */
+    min-height: 56px;
+    border-bottom: 1px solid var(--border-color); /* Default, can be overridden */
+}
+.page-header .back-button-area {
+    flex-shrink: 0;
+}
+/* Existing .page-header .back-button can be used within .back-button-area if needed,
+   or a new .btn-icon can be placed here.
+   For now, this specific .back-button style is kept if it's broadly used.
+   If 工程查驗.html uses a .btn-icon, that will be handled by components.css.
+*/
+.page-header .back-button { /* Assuming this is still a common pattern */
+    color: var(--accent-blue); /* Default color */
+    padding: 0.5rem; /* Adjust if using btn-icon which has its own padding */
+    font-size: 1.2rem; /* Adjust if using btn-icon */
+    background: none; /* Ensure it's like an icon button */
+    border: none;
+    cursor: pointer;
+}
+.page-header .title-area {
+    flex-grow: 1;
+    text-align: center;
+    overflow: hidden; /* For text-overflow */
+}
+.page-header .title-area h1 {
+    font-size: 1.125rem; /* 18px, from inspection.html */
+    font-weight: 700; /* Bold, from inspection.html */
+    color: inherit; /* Inherits from .page-header color */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block; /* For text-align:center to work on h1 */
+    margin: 0; /* Reset any default h1 margin */
+}
+.page-header .actions-area {
+    flex-shrink: 0;
+    width: 40px; /* Placeholder, adjust to balance .back-button-area */
+    /* This helps in truly centering the title if back-button-area has content */
+}
+
+.content-area {
+    flex-grow: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Added for better mobile scrolling */
+}
+
+/* Utility classes from 工地儀表板.html */
+.bg-page-light { background-color: var(--page-bg-light); }
+.text-main-dark { color: var(--text-main-dark); }
+
+.accent-blue-primary { color: var(--accent-blue-primary); }
+.bg-accent-blue-primary { background-color: var(--accent-blue-primary); }
+.accent-blue-dark { color: var(--accent-blue-dark); }
+.bg-accent-blue-dark { background-color: var(--accent-blue-dark); }
+.bg-blue-light { background-color: var(--bg-blue-light); }
+
+.text-gray-dark { color: var(--text-gray-dark); }
+.text-gray-medium { color: var(--text-gray-medium); }
+
+.bg-card-white { background-color: var(--card-bg); } /* Uses existing --card-bg */
+.bg-gray-light-accent { background-color: var(--bg-gray-light-accent); }
+
+.status-success { color: var(--accent-green); }
+.status-warning { color: var(--status-warning-color); } /* Text color for warning */
+.status-error { color: var(--accent-red); }
+
+.scrollable-content {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Utility classes from 工程查驗.html analysis */
+.text-accent-strong { color: var(--accent-blue-strong); }
+.text-main-alt { color: var(--text-primary-alt); }
+.text-secondary-alt { color: var(--text-secondary-alt); }
+/* === Styles from 日報輸入.html (General Header and Utilities) === */
+
+/* Default Header Style (e.g., for headers without a specific class like .page-header-light) */
+/* This applies to &lt;header&gt; elements directly if no other more specific rule matches */
+header {
+    background-color: var(--accent-blue-strong); /* #3382ED */
+    color: #FFFFFF;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10; /* Matches z-index of .page-header and .action-footer */
+}
+
+/* Utility classes for text colors from 日報輸入.html, mapped to existing variables */
+.text-accent {
+    color: var(--accent-blue-strong); /* Original: #3382ED */
+}
+.text-main {
+    color: var(--text-primary-alt); /* Original: #1F2937 */
+}
+.text-secondary {
+    color: var(--text-secondary-alt); /* Original: #6B7280 */
+}
+.text-subtle {
+    color: var(--text-icon-default); /* Original: #4B5563, matches existing --text-icon-default */
+}

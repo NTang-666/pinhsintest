@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品信工務系統 - 老闆儀表板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+    <div class="mobile-container">
+        <!-- 工地列表頁面 -->
+        <div id="pageSiteList" class="page active">
+            <header class="page-header">
+                <h1 class="header-title">我的工地</h1>
+            </header>
+            <main class="content-area">
+                <div class="filter-controls">
+                    <select id="filterCriteria" name="filterCriteria">
+                        <option value="progress_delay">進度顯著落後</option>
+                        <option value="cost_overrun">成本超支風險</option>
+                        <option value="expiry_near">合約即將到期</option>
+                    </select>
+                    <select id="sortOrder" name="sortOrder">
+                        <option value="desc">問題最嚴重優先</option>
+                        <option value="asc">表現最佳優先</option>
+                    </select>
+                </div>
+                <div id="siteListContainer"></div>
+            </main>
+        </div>
+
+        <!-- 工地儀表板頁面 -->
+        <div id="pageSiteDashboard" class="page">
+            <header class="page-header">
+                <button class="back-button"><i class="fas fa-arrow-left"></i></button>
+                <h1 id="dashboardTitle" class="header-title">工地儀表板</h1>
+            </header>
+            <main class="content-area">
+                <div class="space-y-4">
+                    <!-- 【修正問題一】2x2 重點數據圖卡 -->
+                    <section class="top-metrics-grid">
+                        <div class="metric-info-card metric-card-1">
+                            <div class="label">距上次請款</div>
+                            <div class="value">25 <span class="sub-value">天</span></div>
+                        </div>
+                        <div class="metric-info-card metric-card-2" id="unpaidMetricsCardTrigger">
+                            <div class="label">已請款 / 未請款</div>
+                            <div class="value">1,000<span class="sub-value">萬</span> / 350<span class="sub-value">萬</span></div>
+                        </div>
+                        <div class="metric-info-card metric-card-3">
+                            <div class="label">目前成本總額</div>
+                            <div class="value">1,280<span class="sub-value">萬</span></div>
+                        </div>
+                        <div class="metric-info-card metric-card-4">
+                            <div class="label">合約剩餘</div>
+                            <div class="value">120 <span class="sub-value">天</span></div>
+                        </div>
+                    </section>
+
+                    <!-- 【修正問題二】圖表區域 - 增強時間控制和總計顯示 -->
+                    <section class="dashboard-section-card">
+                        <h2 class="dashboard-section-title">人力與零用金趨勢</h2>
+                        
+                        <!-- 圖表頁籤 -->
+                        <div class="chart-tabs-container">
+                            <button id="tabLaborChart" class="chart-tab-button active">組工人數變化</button>
+                            <button id="tabPettyCashChart" class="chart-tab-button">零用金支出</button>
+                        </div>
+                        
+                        <!-- 時間控制區 -->
+                        <div class="chart-controls-row">
+                            <div class="time-scale-controls">
+                                <button class="time-scale-btn active" data-scale="day">日</button>
+                                <button class="time-scale-btn" data-scale="week">週</button>
+                                <button class="time-scale-btn" data-scale="month">月</button>
+                            </div>
+                            <div class="time-navigation">
+                                <button class="time-nav-btn" id="prevPeriod">← 前</button>
+                                <span class="current-period-label" id="currentPeriodLabel">本週</span>
+                                <button class="time-nav-btn" id="nextPeriod">後 →</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 總計顯示 -->
+                        <div class="chart-summary-box">
+                            <span class="summary-label" id="summaryLabel">本週總計</span>
+                            <span class="summary-value" id="chartSummaryValue">85人</span>
+                        </div>
+                        
+                        <!-- 人力圖表 -->
+                        <div id="contentLaborChart">
+                            <div class="chart-visual-area">
+                                <svg width="100%" height="100%" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" id="laborChartSvg">
+                                    <!-- Y軸 -->
+                                    <line x1="50" y1="20" x2="50" y2="160" stroke="#ccc" stroke-width="1"/>
+                                    <!-- X軸 -->
+                                    <line x1="50" y1="160" x2="340" y2="160" stroke="#ccc" stroke-width="1"/>
+                                    
+                                    <!-- Y軸標籤 -->
+                                    <text x="45" y="25" text-anchor="end" font-size="11" fill="#666">20人</text>
+                                    <text x="45" y="60" text-anchor="end" font-size="11" fill="#666">15人</text>
+                                    <text x="45" y="95" text-anchor="end" font-size="11" fill="#666">10人</text>
+                                    <text x="45" y="130" text-anchor="end" font-size="11" fill="#666">5人</text>
+                                    <text x="45" y="165" text-anchor="end" font-size="11" fill="#666">0人</text>
+                                    
+                                    <!-- 網格線 -->
+                                    <line x1="50" y1="25" x2="340" y2="25" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    <line x1="50" y1="60" x2="340" y2="60" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    <line x1="50" y1="95" x2="340" y2="95" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    <line x1="50" y1="130" x2="340" y2="130" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    
+                                    <g class="x-axis-labels-group"></g>
+                                    <polyline class="data-line" fill="none" stroke="#007bff" stroke-width="2.5" stroke-linecap="round"/>
+                                    <g class="data-points-group"></g>
+                                </svg>
+                                <div id="laborTooltip" class="data-tooltip"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 零用金圖表 -->
+                        <div id="contentPettyCashChart" style="display: none;">
+                            <div class="chart-visual-area">
+                                <svg width="100%" height="100%" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" id="pettyCashChartSvg">
+                                    <!-- Y軸 -->
+                                    <line x1="50" y1="20" x2="50" y2="160" stroke="#ccc" stroke-width="1"/>
+                                    <!-- X軸 -->
+                                    <line x1="50" y1="160" x2="340" y2="160" stroke="#ccc" stroke-width="1"/>
+                                    
+                                    <!-- Y軸標籤 -->
+                                    <text x="45" y="25" text-anchor="end" font-size="11" fill="#666">8萬</text>
+                                    <text x="45" y="60" text-anchor="end" font-size="11" fill="#666">6萬</text>
+                                    <text x="45" y="95" text-anchor="end" font-size="11" fill="#666">4萬</text>
+                                    <text x="45" y="130" text-anchor="end" font-size="11" fill="#666">2萬</text>
+                                    <text x="45" y="165" text-anchor="end" font-size="11" fill="#666">0元</text>
+                                    
+                                    <!-- 網格線 -->
+                                    <line x1="50" y1="25" x2="340" y2="25" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    <line x1="50" y1="60" x2="340" y2="60" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    <line x1="50" y1="95" x2="340" y2="95" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    <line x1="50" y1="130" x2="340" y2="130" stroke="#f0f0f0" stroke-width="0.5"/>
+                                    
+                                    <g class="x-axis-labels-group"></g>
+                                    <polyline class="data-line" fill="none" stroke="#fd7e14" stroke-width="2.5" stroke-linecap="round"/>
+                                    <g class="data-points-group"></g>
+                                </svg>
+                                <div id="pettyCashTooltip" class="data-tooltip"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 進度狀態 -->
+                    <section class="dashboard-section-card">
+                        <h2 class="dashboard-section-title">進度狀態</h2>
+                        <div class="status-alert">
+                            <i class="fas fa-hourglass-half"></i>
+                            <div class="status-alert-content">
+                                <h3>進度：輕微延遲</h3>
+                                <p>較預期晚 3 天，需追蹤</p>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- 【修正問題四】甘特圖 -->
+                    <section class="gantt-container-card">
+                        <div class="gantt-header">
+                           <h2 class="gantt-title">工程進度表</h2>
+                           <div class="gantt-view-controls">
+                               <button class="gantt-view-btn active">月</button>
+                               <button class="gantt-view-btn">週</button>
+                               <button class="gantt-view-btn">日</button>
+                           </div>
+                        </div>
+                        <div class="gantt-chart-area">
+                            <div class="gantt-timeline" id="ganttTimeline">
+                                <!-- 日期標頭將由 JavaScript (gantt.js) 生成 -->
+                            </div>
+                            <div style="position: relative; min-height: 100px;" id="ganttTasksBoss">
+                                <!-- 任務條將由 JavaScript (gantt.js) 生成 -->
+                                <!-- 今日線也將由 gantt.js 控制 -->
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 品質概況 -->
+                    <section class="dashboard-section-card">
+                        <h2 class="dashboard-section-title">品質概況</h2>
+                        <div class="quality-grid">
+                            <div class="quality-metric">
+                                <div class="number" style="color: var(--accent-red);">5</div>
+                                <div class="label">待改善缺失</div>
+                            </div>
+                            <div class="quality-metric">
+                                <div class="number" style="color: var(--accent-green);">92%</div>
+                                <div class="label">本月查驗合格率</div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+        
+        <!-- 【修正問題三】側邊欄 -->
+        <div id="unpaidSidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3 class="sidebar-title">請款進度表</h3>
+                <button id="closeSidebarBtn" class="sidebar-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-item-card">
+                    <div class="sidebar-item-name">期別1: 基礎工程</div>
+                    <div class="sidebar-item-detail">金額: 1,200,000 元</div>
+                    <div class="sidebar-item-status status-paid">狀態: 已付款</div>
+                </div>
+                <div class="sidebar-item-card">
+                    <div class="sidebar-item-name">期別2: 結構體</div>
+                    <div class="sidebar-item-detail">金額: 850,000 元</div>
+                    <div class="sidebar-item-status status-pending">狀態: 待請款</div>
+                </div>
+                <div class="sidebar-item-card">
+                    <div class="sidebar-item-name">期別3: 裝修工程</div>
+                    <div class="sidebar-item-detail">金額: 2,100,000 元</div>
+                    <div class="sidebar-item-status status-pending">狀態: 待請款</div>
+                </div>
+                <div class="sidebar-item-card">
+                    <div class="sidebar-item-name">期別4: 收尾工程</div>
+                    <div class="sidebar-item-detail">金額: 450,000 元</div>
+                    <div class="sidebar-item-status status-pending">狀態: 待請款</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 側邊欄遮罩 -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    </div>
+
+    <script src="../assets/js/utils/navigation.js"></script>
+    <script src="../assets/js/utils/form-handler.js"></script>
+    <!-- 引入模組化的圖表腳本 -->
+    <script type="module" src="../assets/js/utils/chart-utils.js"></script>
+    <!-- dashboard.js 會導入 gantt.js，所以這裡不需要單獨引入 gantt.js -->
+    <script type="module" src="../assets/js/pages/dashboard.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM 元素 (非導航相關, 非圖表相關, 非甘特圖相關)
+            const siteListContainer = document.getElementById('siteListContainer');
+            const filterCriteriaSelect = document.getElementById('filterCriteria');
+            const sortOrderSelect = document.getElementById('sortOrder');
+            
+            // 側邊欄相關的 DOM 元素獲取、函數定義和事件監聽器已移至 dashboard.js 及 sidebar.js
+            
+            // 甘特圖時間軸生成邏輯已移至 dashboard.js 並由 GanttChart 類處理
+
+            const mockSitesData = [
+                { id: 'alpha', name: '工地 Alpha (天龍國豪宅)', progress_delay: 15, cost_overrun_risk: 3, expiry_days: 95, defects: 8 },
+                { id: 'beta', name: '工地 Beta (海景渡假村)', progress_delay: 5, cost_overrun_risk: 1, expiry_days: 180, defects: 3 },
+                { id: 'gamma', name: '工地 Gamma (文創園區改造)', progress_delay: -7, cost_overrun_risk: 0, expiry_days: 210, defects: 1 },
+                { id: 'delta', name: '工地 Delta (偏鄉校舍重建)', progress_delay: 0, cost_overrun_risk: 2, expiry_days: 30, defects: 2 }
+            ];
+
+            function renderSiteCards() {
+                if (!siteListContainer || !filterCriteriaSelect || !sortOrderSelect) return;
+                siteListContainer.innerHTML = '';
+                
+                const filterControlsElement = document.querySelector('.filter-controls');
+                if (!filterControlsElement) {
+                    console.warn('Filter controls element not found for renderSiteCards.');
+                    return;
+                }
+                // 假設 FormHandler 是全局可用的，或者已通過其他方式引入
+                const filterData = window.FormHandler ? window.FormHandler.getFormData(filterControlsElement) : { filterCriteria: 'progress_delay', sortOrder: 'desc' };
+                let currentFilter = filterData.filterCriteria;
+                let currentSortOrder = filterData.sortOrder;
+                let sitesToRender = [...mockSitesData];
+
+                sitesToRender.sort((a, b) => {
+                    let valA, valB;
+                    if (currentFilter === 'progress_delay') { valA = a.progress_delay; valB = b.progress_delay; } 
+                    else if (currentFilter === 'cost_overrun') { valA = a.cost_overrun_risk; valB = b.cost_overrun_risk; } 
+                    else if (currentFilter === 'expiry_near') { valA = a.expiry_days; valB = b.expiry_days; }
+                    else { valA = a.progress_delay; valB = b.progress_delay; } // Default sort
+                    if (currentFilter === 'expiry_near') return currentSortOrder === 'desc' ? valA - valB : valB - valA;
+                    return currentSortOrder === 'desc' ? valB - valA : valA - valB;
+                });
+
+                sitesToRender.forEach(site => {
+                    let metricHtml = '';
+                    let statusClass = 'status-neutral';
+                    switch (currentFilter) {
+                        case 'progress_delay':
+                            if (site.progress_delay > 5) statusClass = 'status-problem';
+                            else if (site.progress_delay > 0) statusClass = 'status-warning';
+                            else statusClass = 'status-good';
+                            metricHtml = site.progress_delay > 0 ? `<span class="label">進度落後：</span><span class="value">${site.progress_delay} 天</span>` : (site.progress_delay < 0 ? `<span class="label">進度超前：</span><span class="value good">${Math.abs(site.progress_delay)} 天</span>` : `<span class="label">進度：</span><span class="value good">正常</span>`);
+                            break;
+                        case 'cost_overrun':
+                            let riskText = "低"; let riskClass = 'value good';
+                            if (site.cost_overrun_risk === 1) { riskText = "中"; riskClass = 'value text-orange-500'; statusClass = 'status-warning'; }
+                            else if (site.cost_overrun_risk >= 2) { riskText = "高"; riskClass = 'value text-red-500'; statusClass = 'status-problem'; }
+                            else { statusClass = 'status-good'; }
+                            metricHtml = `<span class="label">成本風險：</span><span class="${riskClass}">${riskText}</span>`;
+                            break;
+                        case 'expiry_near':
+                            let expiryClass = 'value good';
+                            if (site.expiry_days < 90) expiryClass = 'value text-orange-500';
+                            if (site.expiry_days < 30) expiryClass = 'value text-red-500';
+                            if (site.expiry_days < 30) statusClass = 'status-problem';
+                            else if (site.expiry_days < 90) statusClass = 'status-warning';
+                            else statusClass = 'status-good';
+                            metricHtml = `<span class="label">合約剩餘：</span><span class="${expiryClass}">${site.expiry_days} 天</span>`;
+                            break;
+                    }
+                    const card = `
+                        <div class="site-card ${statusClass}">
+                            <h3 class="site-name">${site.name}</h3>
+                            <p class="metric-display">${metricHtml}</p>
+                            <div class="other-info">
+                                <span><i class="fas fa-${site.defects > 5 ? 'exclamation-circle text-red-500' : (site.defects > 2 ? 'exclamation-triangle text-orange-500' : (site.defects > 0 ? 'info-circle text-sky-500' : 'check-circle text-green-500'))}"></i> 待改善缺失: ${site.defects} 項</span>
+                                <span><i class="far fa-calendar-alt"></i> ${currentFilter !== 'expiry_near' ? `合約剩餘: ${site.expiry_days} 天` : (currentFilter !== 'progress_delay' && site.progress_delay !==0 ? (site.progress_delay < 0 ? `進度超前: ${Math.abs(site.progress_delay)} 天` : `進度落後: ${site.progress_delay} 天`) : '進度正常')}</span>
+                            </div>
+                            <a href="#" class="view-dashboard-btn" data-siteid="${site.id}" data-sitename="${site.name}">查看儀表板 ></a>
+                        </div>`;
+                    siteListContainer.innerHTML += card;
+                });
+                // Re-attach listeners for newly created buttons after cards are rendered
+                initializeBossDashboardNavigation(); 
+            }
+            
+            // Event Listeners (Non-Navigation, Non-Chart, Non-Gantt)
+            if (filterCriteriaSelect) filterCriteriaSelect.addEventListener('change', renderSiteCards);
+            if (sortOrderSelect) sortOrderSelect.addEventListener('change', renderSiteCards);
+            // 側邊欄事件監聽器已移至 dashboard.js 中 Sidebar 實例的初始化過程
+            
+            // Initialize Navigation
+            // 確保 navigation.js 中的 initializeNavigation 和 setInitialPage 是全局可用的或正確導入的
+            function initializeBossDashboardNavigation() {
+                const navConfigs = [
+                    {
+                        triggerSelector: '.view-dashboard-btn',
+                        targetPageId: 'pageSiteDashboard',
+                        options: {
+                            titleUpdates: [{
+                                elementId: 'dashboardTitle',
+                                content: (triggerEl, context) => `${context.siteNameForTitle || '工地'} - 儀表板`
+                            }],
+                            recordScrollOnLeaveFrom: ['pageSiteList'] // 當離開 pageSiteList 前往 pageSiteDashboard 時記錄滾動
+                        },
+                        passDatasetToOptions: [{ datasetKey: 'sitename', optionKey: 'siteNameForTitle' }]
+                    },
+                    {
+                        triggerSelector: '#pageSiteDashboard .back-button',
+                        targetPageId: 'pageSiteList',
+                        options: {
+                            preserveScrollOnReturnTo: ['pageSiteList'] // 當回到 pageSiteList 時恢復滾動
+                            // recordScrollOnLeaveFrom 可以在導航到詳細頁時統一處理，
+                            // 或者如果特定返回按鈕有特殊邏輯，也可以在這裡加。
+                            // 為了簡潔，主要在離開列表頁時記錄。
+                        }
+                    }
+                ];
+                const currentActivePageId = window._navigationContext?.currentPageId || 'pageSiteList';
+                if (typeof window.initializeNavigation === 'function') {
+                    window.initializeNavigation(navConfigs, { currentPageId: currentActivePageId });
+                }
+            }
+
+            // Initial Setup
+            const initialPageId = document.querySelector('.page.active')?.id || 'pageSiteList';
+            if (typeof window.setInitialPage === 'function') {
+                 window.setInitialPage(initialPageId); 
+            }
+
+            if (initialPageId === 'pageSiteList') {
+                renderSiteCards(); 
+            } else {
+                initializeBossDashboardNavigation();
+            }
+            
+            // generateGanttTimeline(); // 已被移除，由 dashboard.js 中的 GanttChart 處理
+            
+            // 圖表相關的初始化已移至 dashboard.js
+        });
+    </script>
+</body>
+</html>

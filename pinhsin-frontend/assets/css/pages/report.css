@@ -1,0 +1,13 @@
+/* Page specific styles for 日報輸入.html */
+
+/* Material Input Item Styles */
+.material-item {
+    border-top: 1px solid var(--page-bg-alt); /* #E5E7EB */
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+.material-item:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+}

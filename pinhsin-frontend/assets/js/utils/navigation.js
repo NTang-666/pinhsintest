@@ -46,7 +46,7 @@ let scrollPositions = {}; // Stores scroll positions for specified pages
  * @param {boolean} [status] - If provided, sets the status.
  * @returns {boolean|undefined} - The status if getting, or undefined if setting.
  */
-function manageUnsavedChanges(contextKey, status) {
+export function manageUnsavedChanges(contextKey, status) {
     if (typeof status === 'boolean') {
         _unsavedChangesFlags[contextKey] = status;
         return undefined;
@@ -60,7 +60,13 @@ function manageUnsavedChanges(contextKey, status) {
  * @param {NavigationOptions} [options={}] - Navigation options.
  * @param {HTMLElement} [triggerElement=null] - The element that triggered the navigation.
  */
-function navigateTo(targetPageId, options = {}, triggerElement = null) {
+
+export function getCurrentActivePageId(config) {
+const activePage = document.querySelector(`${config.pageSelector}.${config.activeClass}`);
+return activePage ? activePage.id : null;
+}
+
+export function navigateTo(targetPageId, options = {}, triggerElement = null) {
     const defaults = {
         checkUnsaved: false,
         unsavedChangesContext: null,
@@ -83,10 +89,16 @@ function navigateTo(targetPageId, options = {}, triggerElement = null) {
     const config = { ...defaults, ...options };
 
     // Store scroll position for the current page if it's in recordScrollOnLeaveFrom
-    const departingPageId = _navigationContext.currentPageId;
-    if (departingPageId && config.recordScrollOnLeaveFrom && config.recordScrollOnLeaveFrom.includes(departingPageId)) {
+    const departingPageId = _navigationContext.currentPageId || getCurrentActivePageId(config);
+    
+    // 如果目標頁面就是當前頁面，不需要導航
+    if (departingPageId === targetPageId) {
+        return;
+    }
+
+    // 儲存滾動位置
+    if (departingPageId && config.recordScrollOnLeaveFrom.includes(departingPageId)) {
         scrollPositions[departingPageId] = window.scrollY;
-        // console.log(`Stored scroll for ${departingPageId}: ${scrollPositions[departingPageId]}`);
     }
 
     if (config.checkUnsaved && config.unsavedChangesContext && manageUnsavedChanges(config.unsavedChangesContext)) {
@@ -114,37 +126,12 @@ function navigateTo(targetPageId, options = {}, triggerElement = null) {
 
     allPages.forEach(page => {
         const isTarget = page.id === targetPageId;
-        switch (config.animationType) {
-            case 'simple':
-                // Check if this page uses 'hidden' class convention or 'active' class convention
-                const usesHiddenClass = page.classList.contains(config.hiddenClass) || isTarget; // Assume target might need hidden removed
-                                                                                                  // A bit simplistic, might need refinement if a page can have both
-                if (isTarget) {
-                    if (usesHiddenClass && page.classList.contains(config.hiddenClass)) {
-                        page.classList.remove(config.hiddenClass);
-                    }
-                    page.classList.add(config.activeClass); // Ensure active is set
-                } else {
-                    if (usesHiddenClass) {
-                        page.classList.add(config.hiddenClass);
-                    }
-                    page.classList.remove(config.activeClass);
-                }
-                break;
-            case 'slide':
-                if (isTarget) {
-                    page.classList.add(config.activeClass); // Make it displayable
-                    requestAnimationFrame(() => { // Ensure display is set before transform
-                        page.style.transform = config.slideTargetTransform;
-                        page.classList.add(config.slideActiveClass);
-                    });
-                } else {
-                    page.style.transform = config.slideInitialTransform;
-                    page.classList.remove(config.slideActiveClass);
-                    // Optionally, remove activeClass after transition if display is handled by transform
-                    // page.addEventListener('transitionend', () => page.classList.remove(config.activeClass), { once: true });
-                }
-                break;
+        if (isTarget) {
+            page.classList.add(config.activeClass);
+            page.classList.remove(config.hiddenClass);
+        } else {
+            page.classList.remove(config.activeClass);
+            page.classList.add(config.hiddenClass);
         }
     });
 
@@ -193,7 +180,7 @@ function navigateTo(targetPageId, options = {}, triggerElement = null) {
  *  - passDatasetToOptions: (Optional) Array of objects like {datasetKey: 'sitename', optionKey: 'siteNameForTitle'}
  *                          to pass dataset attributes from trigger to options for dynamic content.
  */
-function initializeNavigation(navConfigs, initialContext = {}) {
+export function initializeNavigation(navConfigs, initialContext = {}) {
     _navigationContext = { ..._navigationContext, ...initialContext };
 
     navConfigs.forEach(config => {
@@ -225,21 +212,21 @@ function initializeNavigation(navConfigs, initialContext = {}) {
  * Call this once when a multi-page HTML document loads.
  * @param {string} pageId
  */
-function setInitialPage(pageId) {
+export function setInitialPage(pageId) {
     _navigationContext.currentPageId = pageId;
     const targetPageElement = document.getElementById(pageId);
     if (targetPageElement) {
-         // Ensure only the initial page is active
-        document.querySelectorAll(targetPageElement.dataset.pageSelector || '.page').forEach(p => {
+        // 使用固定的選擇器，不依賴 dataset
+        document.querySelectorAll('.page').forEach(p => {
             if (p.id === pageId) {
-                p.classList.add(targetPageElement.dataset.activeClass || 'active');
-                if (targetPageElement.dataset.hiddenClass && p.classList.contains(targetPageElement.dataset.hiddenClass)) {
-                    p.classList.remove(targetPageElement.dataset.hiddenClass);
+                p.classList.add('active');
+                if (p.classList.contains('hidden')) {
+                    p.classList.remove('hidden');
                 }
             } else {
-                p.classList.remove(targetPageElement.dataset.activeClass || 'active');
-                 if (targetPageElement.dataset.hiddenClass && !p.classList.contains(targetPageElement.dataset.hiddenClass)) {
-                    // p.classList.add(targetPageElement.dataset.hiddenClass); // Be careful with this, might hide unintended pages
+                p.classList.remove('active');
+                if (!p.classList.contains('hidden')) {
+                    p.classList.add('hidden');
                 }
             }
         });

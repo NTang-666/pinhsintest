@@ -3,6 +3,11 @@ import { drawLineChart, hideAllTooltips } from '../utils/chart-utils.js';
 import { GanttChart } from '../components/gantt.js';
 import { Sidebar } from '../components/sidebar.js'; // 導入 Sidebar 元件
 
+// ✅ 添加：依賴檢查
+if (typeof api === 'undefined') {
+    console.warn('Dashboard: API 客戶端未載入，部分功能可能受限');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // --- 請款進度表側邊欄初始化 ---
     const unpaidMetricsCardTriggerElement = document.getElementById('unpaidMetricsCardTrigger');
@@ -38,6 +43,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return; // 如果兩個儀表板的關鍵元素都不存在，則不執行後續邏輯
     }
     
+     // ✅ 添加：初始化狀態日誌
+    console.log('儀表板初始化:', {
+        isOnBossDashboard,
+        isOnSiteDashboard,
+        laborChartExists: !!laborChartSvg,
+        ganttBossExists: !!ganttTimelineBoss
+    });
+    
     // --- 老闆儀表板甘特圖相關 ---
     if (ganttTimelineBoss) { // 確保只在老闆儀表板的甘特圖元素存在時執行
         const mockBossGanttTasks = [
@@ -56,27 +69,34 @@ document.addEventListener('DOMContentLoaded', function() {
             taskBarColorLogic: (task) => `gantt-task-${task.category || 'default'}`
         };
 
-        if (document.getElementById('ganttTimeline') && document.getElementById('ganttTasksBoss')) {
-             const bossGanttChart = new GanttChart('ganttTimeline', 'ganttTasksBoss', mockBossGanttTasks, ganttConfigBoss);
-             bossGanttChart.setViewDate(new Date(2025, 4, 27)); 
+        // ✅ 修正：添加錯誤處理
+        const ganttTimelineEl = document.getElementById('ganttTimeline');
+        const ganttTasksBossEl = document.getElementById('ganttTasksBoss');
+        
+        if (ganttTimelineEl && ganttTasksBossEl) {
+            try {
+                const bossGanttChart = new GanttChart('ganttTimeline', 'ganttTasksBoss', mockBossGanttTasks, ganttConfigBoss);
+                bossGanttChart.setViewDate(new Date(2025, 4, 27));
 
-            const bossGanttViewBtns = document.querySelectorAll('.gantt-container-card .gantt-view-btn');
-            bossGanttViewBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    bossGanttViewBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    const scaleText = this.textContent.toLowerCase(); 
-                    let newScale = 'month';
-                    if (scaleText.includes('週') || scaleText.includes('week')) newScale = 'week';
-                    else if (scaleText.includes('日') || scaleText.includes('day')) newScale = 'day';
-                    bossGanttChart.setScale(newScale);
+                const bossGanttViewBtns = document.querySelectorAll('.gantt-container-card .gantt-view-btn');
+                bossGanttViewBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        bossGanttViewBtns.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        const scaleText = this.textContent.toLowerCase(); 
+                        let newScale = 'month';
+                        if (scaleText.includes('週') || scaleText.includes('week')) newScale = 'week';
+                        else if (scaleText.includes('日') || scaleText.includes('day')) newScale = 'day';
+                        bossGanttChart.setScale(newScale);
+                    });
                 });
-            });
+            } catch (error) {
+                console.error('老闆儀表板甘特圖初始化失敗:', error);
+            }
         } else {
-            // console.warn("Gantt elements for Boss Dashboard (ganttTimeline or ganttTasksBoss) not found, skipping Boss Gantt init.");
+            console.warn('老闆儀表板甘特圖元素未找到');
         }
     }
-
 
     // --- 原有圖表邏輯 (人力與零用金趨勢 - 僅老闆儀表板) ---
     if (laborChartSvg) { 
@@ -129,8 +149,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function updateDashboardChart() {
             const data = mockChartData[chartState.currentTab]?.[chartState.currentScale];
-            if (!data) {
-                // console.warn(`No data found for tab: ${chartState.currentTab}, scale: ${chartState.currentScale}`);
+
+            // ✅ 添加：數據驗證
+            if (!data || !Array.isArray(data)) {
+                console.warn(`無效的圖表數據: tab=${chartState.currentTab}, scale=${chartState.currentScale}`);
+                
+                // 使用空數據繪製圖表
                 drawLineChart({
                     svgId: chartState.currentTab === 'labor' ? 'laborChartSvg' : 'pettyCashChartSvg',
                     tooltipId: chartState.currentTab === 'labor' ? 'laborTooltip' : 'pettyCashTooltip',
@@ -141,13 +165,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            drawLineChart({
-                svgId: chartState.currentTab === 'labor' ? 'laborChartSvg' : 'pettyCashChartSvg',
-                tooltipId: chartState.currentTab === 'labor' ? 'laborTooltip' : 'pettyCashTooltip',
-                data: data,
-                isLaborChart: chartState.currentTab === 'labor',
-            });
-            updateDashboardSummary();
+            try {
+                drawLineChart({
+                    svgId: chartState.currentTab === 'labor' ? 'laborChartSvg' : 'pettyCashChartSvg',
+                    tooltipId: chartState.currentTab === 'labor' ? 'laborTooltip' : 'pettyCashTooltip',
+                    data: data,
+                    isLaborChart: chartState.currentTab === 'labor',
+                });
+                updateDashboardSummary();
+            } catch (error) {
+                console.error('圖表繪製失敗:', error);
+            }
         }
 
         function updateDashboardSummary() {
@@ -200,15 +228,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function navigateTime(direction) { 
-            const current = new Date(chartState.currentDate);
-            switch(chartState.currentScale) {
-                case 'day': current.setDate(current.getDate() + (direction === 'prev' ? -7 : 7)); break;
-                case 'week': current.setMonth(current.getMonth() + (direction === 'prev' ? -1 : 1)); break;
-                case 'month': current.setMonth(current.getMonth() + (direction === 'prev' ? -4 : 4)); break;
+            try {
+                const current = new Date(chartState.currentDate);
+                
+                switch(chartState.currentScale) {
+                    case 'day': 
+                        current.setDate(current.getDate() + (direction === 'prev' ? -7 : 7)); 
+                        break;
+                    case 'week': 
+                        current.setMonth(current.getMonth() + (direction === 'prev' ? -1 : 1)); 
+                        break;
+                    case 'month': 
+                        current.setMonth(current.getMonth() + (direction === 'prev' ? -4 : 4)); 
+                        break;
+                    default:
+                        console.warn(`未知的時間尺度: ${chartState.currentScale}`);
+                        return;
+                }
+                
+                chartState.currentDate = current;
+                console.log(`時間導航 (${direction}), 新日期: ${chartState.currentDate.toLocaleDateString()}, 尺度: ${chartState.currentScale}`);
+                updateDashboardChart(); 
+                
+            } catch (error) {
+                console.error('時間導航失敗:', error);
             }
-            chartState.currentDate = current;
-            // console.log(`Navigated time (${direction}), new date: ${chartState.currentDate.toLocaleDateString()}, scale: ${chartState.currentScale}`);
-            updateDashboardChart(); 
         }
 
         if (tabLaborChart && tabPettyCashChart && contentLaborChart && contentPettyCashChart) {
@@ -220,18 +264,40 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', () => handleTimeScaleChange(btn.dataset.scale));
         });
 
-        if (prevPeriodBtn) prevPeriodBtn.addEventListener('click', () => navigateTime('prev'));
-        if (nextPeriodBtn) nextPeriodBtn.addEventListener('click', () => navigateTime('next'));
+        // ✅ 修正：改善初始圖表渲染
+        if (prevPeriodBtn) {
+            prevPeriodBtn.addEventListener('click', () => navigateTime('prev'));
+        }
+        if (nextPeriodBtn) {
+            nextPeriodBtn.addEventListener('click', () => navigateTime('next'));
+        }
         
         document.addEventListener('click', (e) => {
             const chartVisualArea = e.target.closest('.chart-visual-area');
             const tooltip = e.target.closest('.data-tooltip');
-            if (!chartVisualArea && !tooltip) hideAllTooltips();
+            if (!chartVisualArea && !tooltip) {
+                hideAllTooltips();
+            }
         });
 
-        const activePageForChart = document.querySelector('.page.active'); // Use a different variable name
-        if (activePageForChart && activePageForChart.id === 'pageBossDashboard') { // Assuming boss dashboard has this ID or similar
-            updateDashboardChart(); // Initial chart render for boss dashboard
+        // ✅ 修正：更可靠的初始渲染檢查
+        try {
+            // 檢查是否在老闆儀表板頁面
+            const activePageForChart = document.querySelector('.page.active');
+            const isBossDashboardActive = activePageForChart && (
+                activePageForChart.id === 'pageBossDashboard' || 
+                activePageForChart.classList.contains('boss-dashboard') ||
+                laborChartSvg // 如果圖表元素存在，假設是老闆儀表板
+            );
+            
+            if (isBossDashboardActive) {
+                console.log('初始化老闆儀表板圖表');
+                updateDashboardChart(); // Initial chart render for boss dashboard
+            }
+        } catch (error) {
+            console.error('初始圖表渲染失敗:', error);
+            // 仍然嘗試更新圖表，但使用預設值
+            updateDashboardChart();
         }
     } // 結束 if (laborChartSvg) -- 老闆儀表板圖表邏輯
 
@@ -263,51 +329,79 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        const siteGanttChart = new GanttChart('ganttTimelineHeaderDashboard', 'ganttTasksAreaDashboard', mockSiteGanttTasks, ganttConfigSite);
-        if (mockSiteGanttTasks.length > 0) {
-            siteGanttChart.setViewDate(new Date(mockSiteGanttTasks[0].start));
-        } else {
-            siteGanttChart.setViewDate(new Date(2025, 5, 1)); // Default to June 1, 2025 (month is 0-indexed)
-        }
+        // ✅ 修正：添加錯誤處理
+        try {
+            const siteGanttChart = new GanttChart('ganttTimelineHeaderDashboard', 'ganttTasksAreaDashboard', mockSiteGanttTasks, ganttConfigSite);
+            
+            if (mockSiteGanttTasks.length > 0) {
+                siteGanttChart.setViewDate(new Date(mockSiteGanttTasks[0].start));
+            } else {
+                siteGanttChart.setViewDate(new Date(2025, 5, 1)); // Default to June 1, 2025 (month is 0-indexed)
+            }
 
-        const scaleMonthBtn = document.getElementById('ganttScaleMonthBtnDashboard');
-        const scaleWeekBtn = document.getElementById('ganttScaleWeekBtnDashboard');
-        const scaleDayBtn = document.getElementById('ganttScaleDayBtnDashboard');
-        const scaleButtons = [
-            { el: scaleMonthBtn, scale: 'month' },
-            { el: scaleWeekBtn, scale: 'week' },
-            { el: scaleDayBtn, scale: 'day' }
-        ];
+            const scaleMonthBtn = document.getElementById('ganttScaleMonthBtnDashboard');
+            const scaleWeekBtn = document.getElementById('ganttScaleWeekBtnDashboard');
+            const scaleDayBtn = document.getElementById('ganttScaleDayBtnDashboard');
+            const scaleButtons = [
+                { el: scaleMonthBtn, scale: 'month' },
+                { el: scaleWeekBtn, scale: 'week' },
+                { el: scaleDayBtn, scale: 'day' }
+            ];
 
-        scaleButtons.forEach(item => {
-            if (item.el) {
-                item.el.addEventListener('click', function() {
-                    scaleButtons.forEach(btnItem => {
-                        if (btnItem.el) {
-                            btnItem.el.classList.remove('bg-accent-blue-primary', 'text-white');
-                            btnItem.el.classList.add('text-gray-medium');
-                        }
+            scaleButtons.forEach(item => {
+                if (item.el) {
+                    item.el.addEventListener('click', function() {
+                        scaleButtons.forEach(btnItem => {
+                            if (btnItem.el) {
+                                btnItem.el.classList.remove('bg-accent-blue-primary', 'text-white');
+                                btnItem.el.classList.add('text-gray-medium');
+                            }
+                        });
+                        this.classList.add('bg-accent-blue-primary', 'text-white');
+                        this.classList.remove('text-gray-medium');
+                        siteGanttChart.setScale(item.scale);
                     });
-                    this.classList.add('bg-accent-blue-primary', 'text-white');
-                    this.classList.remove('text-gray-medium');
-                    siteGanttChart.setScale(item.scale);
+                }
+            });
+
+            const prevPeriodBtnDashboard = document.getElementById('ganttPrevPeriodBtnDashboard');
+            const nextPeriodBtnDashboard = document.getElementById('ganttNextPeriodBtnDashboard');
+
+            if (prevPeriodBtnDashboard) {
+                prevPeriodBtnDashboard.addEventListener('click', () => {
+                    try {
+                        siteGanttChart.prevPeriod();
+                    } catch (error) {
+                        console.error('切換到上一期間失敗:', error);
+                    }
                 });
             }
-        });
-
-        const prevPeriodBtnDashboard = document.getElementById('ganttPrevPeriodBtnDashboard');
-        const nextPeriodBtnDashboard = document.getElementById('ganttNextPeriodBtnDashboard');
-
-        if (prevPeriodBtnDashboard) {
-            prevPeriodBtnDashboard.addEventListener('click', () => {
-                siteGanttChart.prevPeriod();
-            });
+            
+            if (nextPeriodBtnDashboard) {
+                nextPeriodBtnDashboard.addEventListener('click', () => {
+                    try {
+                        siteGanttChart.nextPeriod();
+                    } catch (error) {
+                        console.error('切換到下一期間失敗:', error);
+                    }
+                });
+            }
+            
+            console.log('工地儀表板甘特圖初始化成功');
+            
+        } catch (error) {
+            console.error('工地儀表板甘特圖初始化失敗:', error);
+            
+            // 顯示錯誤訊息給用戶
+            const ganttContainer = document.getElementById('ganttTimelineHeaderDashboard')?.parentElement;
+            if (ganttContainer) {
+                ganttContainer.innerHTML = `
+                    <div class="p-4 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle mb-2"></i>
+                        <p>甘特圖載入失敗，請重新整理頁面</p>
+                    </div>
+                `;
+            }
         }
-        if (nextPeriodBtnDashboard) {
-            nextPeriodBtnDashboard.addEventListener('click', () => {
-                siteGanttChart.nextPeriod();
-            });
-        }
-        // Initial render is handled by GanttChart constructor.
     }
 }); // 結束 document.addEventListener('DOMContentLoaded', ...)

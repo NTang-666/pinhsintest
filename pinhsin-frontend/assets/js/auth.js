@@ -3,8 +3,13 @@
  * 處理登入、登出、權限檢查等功能
  */
 
-class AuthManager {
+export class AuthManager {
     constructor() {
+        // 改善 API 依賴檢查
+        if (typeof api === 'undefined') {
+            console.error('API 客戶端未載入，AuthManager 無法初始化');
+            throw new Error('API dependency not found');
+        }
         this.api = api; // 使用全域API客戶端
         this.loginModalId = 'loginModal';
         this.init();
@@ -240,16 +245,31 @@ class AuthManager {
 
         try {
             // 驗證token是否有效
-            await this.api.getCurrentUser();
-            this.updateUIForAuthenticatedUser();
-            return true;
-        } catch (error) {
-            if (error instanceof ApiError && error.isAuthError()) {
-                this.api.clearAuth();
-                this.showLoginModal();
-                return false;
+            const user = await this.api.getCurrentUser();
+            if (user && user.success !== false) {
+                this.updateUIForAuthenticatedUser();
+                return true;
+            } else {
+                throw new Error('Invalid user data');
             }
-            throw error;
+        } catch (error) {
+            console.error('Token validation failed:', error);
+            
+            // 檢查是否為網路錯誤
+            if (error.name === 'NetworkError' || error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+                // 網路錯誤時，如果有本地用戶資訊則允許繼續
+                const localUser = this.api.getUserInfo();
+                if (localUser) {
+                    console.warn('網路錯誤，使用本地用戶資訊');
+                    this.updateUIForAuthenticatedUser();
+                    return true;
+                }
+            }
+            
+            // 其他錯誤或沒有本地資訊，清除認證
+            this.api.clearAuth();
+            this.showLoginModal();
+            return false;
         }
     }
 
@@ -282,39 +302,60 @@ class AuthManager {
 
     /**
      * 預熱後端服務（防止 Render 休眠導致的 CORS 錯誤）
-     * @param {function(string)} onProgress - 進度回調函數，用於更新 UI
-     * @returns {Promise<boolean>} - 返回服務是否成功喚醒
      */
     async warmupBackend(onProgress) {
-        const MAX_RETRIES = 15; // 最多重試 15 次 (45秒)
-        const RETRY_DELAY = 3000; // 每次重試間隔 3 秒
+        const MAX_RETRIES = 10; // 減少重試次數
+        const RETRY_DELAY = 2000; // 減少間隔時間
         const healthCheckUrl = `${this.api.baseURL.replace('/api', '')}/health`;
 
         onProgress('正在連接後端服務...');
 
         for (let i = 0; i < MAX_RETRIES; i++) {
             try {
-                const response = await fetch(healthCheckUrl, { signal: AbortSignal.timeout(RETRY_DELAY - 500) });
+                // 使用 AbortController 設置超時
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), RETRY_DELAY - 200);
+                
+                const response = await fetch(healthCheckUrl, { 
+                    signal: controller.signal,
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success && data.data.status === 'healthy') {
+                    if (data.success && data.data && data.data.status === 'healthy') {
                         onProgress('後端服務已連接！');
                         console.log('✅ Backend service is warm and healthy.');
                         return true;
                     }
                 }
+                
                 onProgress(`正在喚醒後端服務... (${i + 1}/${MAX_RETRIES})`);
+                
             } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log(`Request ${i + 1} timed out`);
+                } else {
+                    console.log(`Request ${i + 1} failed:`, error.message);
+                }
                 onProgress(`服務未就緒，正在重試... (${i + 1}/${MAX_RETRIES})`);
             }
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            
+            // 最後一次重試失敗後不再等待
+            if (i < MAX_RETRIES - 1) {
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            }
         }
 
         console.error('❌ Backend service failed to warm up after multiple retries.');
-        onProgress('後端服務連接失敗，請稍後再試。');
+        onProgress('後端服務連接失敗，請稍後再試或重新整理頁面。');
         return false;
     }
-
     /**
      * 處理登入
      */
@@ -332,38 +373,86 @@ class AuthManager {
         this.setLoginLoading(true);
         this.hideLoginError();
 
+        // 添加登入狀態顯示
+        const loginButton = document.getElementById('loginButton');
+        const originalText = loginButton.textContent;
+
         try {
+            // 更新按鈕文字顯示預熱狀態
+            this.updateLoginButtonText('正在連接服務...');
+            
             // 先喚醒後端服務（Render 免費方案會休眠）
-            await this.warmupBackend((message) => {
-                console.log('登入預熱:', message);
+            const isBackendReady = await this.warmupBackend((message) => {
+                this.updateLoginButtonText(message);
             });
             
+            if (!isBackendReady) {
+                throw new Error('後端服務無法連接，請稍後再試');
+            }
+            
+            this.updateLoginButtonText('正在驗證...');
             const response = await this.api.login(username, password);
             
-            if (response.success) {
-                this.hideLoginModal();
-                this.updateUIForAuthenticatedUser();
-                this.showMessage('登入成功！', 'success');
+            if (response && response.success) {
+                this.updateLoginButtonText('登入成功！');
                 
-                // 觸發登入成功事件
-                window.dispatchEvent(new CustomEvent('auth:login', {
-                    detail: { user: response.data.user }
-                }));
-                
-                // 如果在管理員頁面，重新初始化管理員面板
-                if (window.location.pathname.includes('/admin.html')) {
-                    this.initializeAdminPanel(response.data.user);
-                }
+                setTimeout(() => {
+                    this.hideLoginModal();
+                    this.updateUIForAuthenticatedUser();
+                    this.showMessage('登入成功！', 'success');
+                    
+                    // 觸發登入成功事件
+                    window.dispatchEvent(new CustomEvent('auth:login', {
+                        detail: { user: response.data.user }
+                    }));
+                    
+                    // 如果在管理員頁面，重新初始化管理員面板
+                    if (window.location.pathname.includes('/admin.html') || window.location.pathname.includes('admin')) {
+                        this.initializeAdminPanel(response.data.user);
+                    }
+                }, 500);
+            } else {
+                throw new Error(response.message || '登入失敗');
             }
         } catch (error) {
-            if (error instanceof ApiError) {
-                this.showLoginError(error.getUserMessage());
-            } else {
-                this.showLoginError('登入失敗，請稍後再試');
-                console.error('Login error:', error);
+            let errorMessage = '登入失敗，請稍後再試';
+            
+            if (error.message) {
+                if (error.message.includes('認證失敗') || error.message.includes('密碼錯誤')) {
+                    errorMessage = '用戶名或密碼錯誤';
+                } else if (error.message.includes('網路') || error.message.includes('連接')) {
+                    errorMessage = '網路連接失敗，請檢查網路狀態';
+                } else if (error.message.includes('後端服務')) {
+                    errorMessage = error.message;
+                } else {
+                    errorMessage = error.message;
+                }
             }
+            
+            this.showLoginError(errorMessage);
+            console.error('Login error:', error);
         } finally {
             this.setLoginLoading(false);
+        }
+    }
+
+    /**
+     * 更新登入按鈕文字
+     */
+    updateLoginButtonText(text) {
+        const loadingSpinner = document.getElementById('loginLoading');
+        if (loadingSpinner) {
+            // 正確地更新載入文字
+            const textElement = loadingSpinner.childNodes[2]; // 第三個節點是文字
+            if (textElement && textElement.nodeType === Node.TEXT_NODE) {
+                textElement.textContent = text;
+            } else {
+                // 如果結構不如預期，直接替換內容
+                loadingSpinner.innerHTML = `
+                    <i class="fas fa-spinner fa-spin"></i>
+                    ${text}
+                `;
+            }
         }
     }
 
@@ -564,6 +653,8 @@ class AuthManager {
     requireRole(requiredRole) {
         const userInfo = this.api.getUserInfo();
         if (!userInfo) {
+            this.showMessage('需要登入才能使用此功能', 'error');
+            this.showLoginModal();
             throw new Error('Authentication required');
         }
 
@@ -578,6 +669,7 @@ class AuthManager {
         const requiredLevel = roleHierarchy[requiredRole] || 0;
 
         if (userLevel < requiredLevel) {
+            this.showMessage(`需要 ${this.getRoleDisplayName(requiredRole)} 或更高權限`, 'error');
             throw new Error('Insufficient permissions');
         }
 
@@ -585,8 +677,34 @@ class AuthManager {
     }
 }
 
-// 創建全域認證管理器實例 - 等待 DOM 載入完成
+// 創建全域認證管理器實例
 let authManager = null;
+let initRetryCount = 0;
+const MAX_INIT_RETRIES = 50; // 最多重試 5 秒
+
+export function initAuthManager() {
+    initRetryCount++;
+    
+    // 確保 api 已經載入
+    if (typeof api !== 'undefined' && api) {
+        try {
+            authManager = new AuthManager();
+            console.log('✅ AuthManager 初始化完成');
+            return true;
+        } catch (error) {
+            console.error('❌ AuthManager 初始化失敗:', error);
+            return false;
+        }
+    } else {
+        if (initRetryCount < MAX_INIT_RETRIES) {
+            console.warn(`⚠️ API 客戶端未載入，正在重試... (${initRetryCount}/${MAX_INIT_RETRIES})`);
+            setTimeout(initAuthManager, 100);
+        } else {
+            console.error('❌ API 客戶端載入超時，AuthManager 初始化失敗');
+        }
+        return false;
+    }
+}
 
 // 確保在 DOM 載入完成後初始化
 if (document.readyState === 'loading') {
@@ -596,20 +714,8 @@ if (document.readyState === 'loading') {
     initAuthManager();
 }
 
-function initAuthManager() {
-    // 確保 api 已經載入
-    if (typeof api !== 'undefined') {
-        authManager = new AuthManager();
-        console.log('✅ AuthManager 初始化完成');
-    } else {
-        console.warn('⚠️ API 客戶端未載入，延遲初始化 AuthManager');
-        // 等待一下再嘗試
-        setTimeout(initAuthManager, 100);
-    }
-}
-
 // 全域認證介面函數
-const auth = {
+export const auth = {
     /**
      * 初始化認證檢查
      * @param {Function} onSuccess - 認證成功回呼函數
@@ -627,11 +733,15 @@ const auth = {
                 overlay.id = loadingOverlayId;
                 overlay.style.cssText = `
                     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background-color: rgba(0, 0, 0, 0.5);
+                    background-color: rgba(0, 0, 0, 0.7);
                     color: white; display: flex; align-items: center; justify-content: center;
                     z-index: 10000; font-size: 1.2rem; flex-direction: column; gap: 1rem;
                 `;
-                overlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-2x"></i><p></p>`;
+                overlay.innerHTML = `
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p></p>
+                    <small style="opacity: 0.8;">首次載入可能需要較長時間</small>
+                `;
                 document.body.appendChild(overlay);
             }
             overlay.style.display = 'flex';
@@ -644,8 +754,22 @@ const auth = {
         };
 
         try {
+            // 等待 authManager 初始化
             if (!authManager) {
-                // ... (等待 authManager 初始化的邏輯保持不變)
+                showLoading('正在初始化認證系統...');
+                
+                let waitCount = 0;
+                while (!authManager && waitCount < 100) { // 最多等待 10 秒
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    waitCount++;
+                }
+                
+                if (!authManager) {
+                    hideLoading();
+                    console.error('AuthManager 初始化超時');
+                    if (onFailure) onFailure();
+                    return;
+                }
             }
 
             // 步驟 1: 預熱後端
@@ -671,28 +795,48 @@ const auth = {
                 return;
             }
 
-            // 步驟 3: 驗證 Token 有效性
-            console.log('開始驗證 Token 有效性...');
-            let userInfo;
-            try {
-                userInfo = await authManager.api.getCurrentUser();
-                console.log('Token 驗證結果:', userInfo ? '有效' : '無效', userInfo);
-            } catch (error) {
-                console.log('Token 驗證過程中出現網路錯誤，但本地 Token 存在，允許繼續使用:', error.message);
-                // 如果是網路錯誤且本地有Token，嘗試使用本地用戶資訊
-                userInfo = authManager.api.getUserInfo();
-                if (userInfo) {
-                    console.log('使用本地快取的用戶資訊:', userInfo);
-                }
-            }
+
+            // 步驟 3: 優先使用本地用戶資訊，背景驗證 Token
+            console.log('開始檢查用戶資訊...');
+            let userInfo = authManager.api.getUserInfo(); // 優先使用本地快取
+            let tokenValidated = false;
             
-            if (!userInfo) {
-                console.log('Token 驗證失敗且無本地用戶資訊，清除並顯示登入框');
-                authManager.api.logout(); // 清除無效的 Token
-                hideLoading();
-                if (onFailure) onFailure();
-                authManager.showLoginModal();
-                return;
+            if (userInfo) {
+                console.log('使用本地快取的用戶資訊:', userInfo);
+                // 背景驗證 Token，不阻塞 UI
+                setTimeout(async () => {
+                    try {
+                        const serverUserInfo = await authManager.api.getCurrentUser();
+                        if (serverUserInfo) {
+                            console.log('背景 Token 驗證成功，更新本地資訊');
+                            // 靜默更新本地用戶資訊（如果有變更）
+                            if (JSON.stringify(userInfo) !== JSON.stringify(serverUserInfo)) {
+                                localStorage.setItem('user_info', JSON.stringify(serverUserInfo));
+                            }
+                        }
+                    } catch (error) {
+                        console.log('背景 Token 驗證失敗，但不影響當前會話:', error.message);
+                    }
+                }, 1000); // 延遲1秒進行背景驗證
+            } else {
+                // 沒有本地用戶資訊，必須進行同步驗證
+                console.log('無本地用戶資訊，進行同步 Token 驗證...');
+                try {
+                    userInfo = await authManager.api.getCurrentUser();
+                    tokenValidated = true;
+                    console.log('同步 Token 驗證結果:', userInfo ? '有效' : '無效', userInfo);
+                } catch (error) {
+                    console.log('同步 Token 驗證失敗:', error.message);
+                }
+                
+                if (!userInfo) {
+                    console.log('Token 驗證失敗且無本地用戶資訊，清除並顯示登入框');
+                    authManager.api.logout(); // 清除無效的 Token
+                    hideLoading();
+                    if (onFailure) onFailure();
+                    authManager.showLoginModal();
+                    return;
+                }
             }
 
             // 步驟 4: 檢查管理員權限
@@ -700,13 +844,12 @@ const auth = {
                 hideLoading();
                 console.log(`當前用戶角色: ${userInfo.role}, 需要管理員權限，清除Token並顯示登入框`);
                 // 清除非管理員用戶的 Token
-                authManager.api.logout();
+                authManager.api.clearAuth();
                 if (onFailure) onFailure();
-                authManager.showMessage('需要管理員權限，請使用管理員帳號登入', 'warning');
+                authManager.showMessage('需要管理員權限，請使用管理員帳號登入', 'error');
                 authManager.showLoginModal();
                 return;
             }
-
             // 所有檢查通過
             hideLoading();
             if (onSuccess) {
@@ -746,6 +889,6 @@ const auth = {
 };
 
 // 導出供其他模組使用
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { AuthManager, auth };
-}
+//if (typeof module !== 'undefined' && module.exports) {
+//    module.exports = { AuthManager, auth };
+//}

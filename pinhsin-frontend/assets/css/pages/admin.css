@@ -137,11 +137,13 @@
     border-right: 1px solid var(--border-color);
     overflow-y: auto;
     z-index: var(--admin-z-sidebar);
-    transition: transform 0.3s ease;
+    transform: translateX(0); /* 桌面版預設顯示 */
+    transition: transform 0.3s ease, width 0.3s ease;
 }
 
 .admin-sidebar.collapsed {
     width: var(--admin-sidebar-collapsed);
+    transform: translateX(0); /* 確保桌面版側邊欄正常顯示 */
 }
 
 .admin-main {

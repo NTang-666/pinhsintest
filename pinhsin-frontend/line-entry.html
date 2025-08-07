@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>品信工務系統 - 載入中</title>
+    
+    <!-- LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <!-- vConsole for mobile debugging -->
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // 初始化 vConsole (手機調試工具)
+        if (typeof VConsole !== 'undefined') {
+            var vConsole = new VConsole();
+            console.log('🔧 vConsole 已啟用 - 點擊右下角綠色按鈕查看調試資訊');
+        }
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,8 +72,8 @@
     </div>
 
     <!-- API 和認證腳本 -->
-    <script src="assets/js/api.js"></script>
-    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/api.js" onerror="console.error('Failed to load api.js')"></script>
+    <script src="assets/js/auth.js" onerror="console.error('Failed to load auth.js')"></script>
 
     <script>
         /**
@@ -92,6 +106,17 @@
                 this.progressBar.style.width = percentage + '%';
                 if (message) this.loadingText.textContent = message;
                 if (status) this.statusMessage.textContent = status;
+                
+                // 添加進度條顏色變化
+                if (percentage >= 90) {
+                    this.progressBar.className = 'bg-green-600 h-2 rounded-full transition-all duration-500';
+                } else if (percentage >= 50) {
+                    this.progressBar.className = 'bg-blue-600 h-2 rounded-full transition-all duration-500';
+                } else {
+                    this.progressBar.className = 'bg-blue-400 h-2 rounded-full transition-all duration-500';
+                }
+                
+                console.log(`進度: ${percentage}% - ${message} - ${status}`);
             }
 
             /**
@@ -99,23 +124,50 @@
              */
             isLineEnvironment() {
                 const userAgent = navigator.userAgent;
-                return userAgent.includes('Line/') || 
-                       userAgent.includes('LINE/') ||
-                       window.location.search.includes('line=true');
+                const isLineApp = userAgent.includes('Line/') || userAgent.includes('LINE/');
+                const hasLineParam = window.location.search.includes('line=true');
+                const isLiffContext = typeof liff !== 'undefined' && liff.isInClient && liff.isInClient();
+                
+                console.log('環境檢測:', {
+                    userAgent: userAgent,
+                    isLineApp: isLineApp,
+                    hasLineParam: hasLineParam,
+                    isLiffContext: isLiffContext
+                });
+                
+                return isLineApp || hasLineParam || isLiffContext;
             }
 
             /**
              * 取得 LINE 用戶 ID
              */
-            getLineUserId() {
-                // 實際環境中需要使用 LINE LIFF SDK
-                // 開發環境使用模擬 ID
-                if (window.liff && window.liff.getProfile) {
-                    return window.liff.getProfile().then(profile => profile.userId);
+            async getLineUserId() {
+                try {
+                    // 檢查 LIFF 是否可用
+                    if (typeof liff !== 'undefined') {
+                        // 確保 LIFF 已初始化
+                        if (!liff.isInClient()) {
+                            console.warn('不在 LINE 客戶端中');
+                            return 'dev_user_web'; // 開發環境
+                        }
+                        
+                        // 檢查是否已登入
+                        if (!liff.isLoggedIn()) {
+                            await liff.login();
+                        }
+                        
+                        const profile = await liff.getProfile();
+                        return profile.userId;
+                    }
+                    
+                    // 開發環境模擬
+                    console.log('開發環境：使用模擬 LINE 用戶 ID');
+                    return 'U123456789abcdef';
+                    
+                } catch (error) {
+                    console.error('取得 LINE 用戶 ID 失敗:', error);
+                    return 'dev_user_error'; // 錯誤時的備用 ID
                 }
-                
-                // 開發環境模擬
-                return Promise.resolve('U123456789abcdef');
             }
 
             /**
@@ -133,18 +185,23 @@
                         try {
                             // 驗證 token 是否仍然有效
                             const userInfo = await this.api.getUserInfo();
-                            if (userInfo.success) {
+                            if (userInfo && userInfo.success) {
                                 this.updateProgress(80, '登入狀態確認', '準備跳轉頁面');
                                 return true;
                             }
                         } catch (error) {
-                            console.log('Token 已過期，需要重新登入');
+                            console.log('Token 已過期，需要重新登入:', error);
                             localStorage.removeItem('authToken');
+                            localStorage.removeItem('userInfo');
                         }
                     }
 
                     // 取得 LINE 用戶 ID
                     const lineUserId = await this.getLineUserId();
+                    
+                    if (!lineUserId || lineUserId.includes('error')) {
+                        throw new Error('無法取得 LINE 用戶資訊');
+                    }
                     
                     this.updateProgress(50, '正在連接後端系統...', '建立 LINE 用戶連接');
 
@@ -154,7 +211,7 @@
                         accessToken: 'dev_token_test_user' // 開發環境
                     });
 
-                    if (response.success && response.data.token) {
+                    if (response && response.success && response.data && response.data.token) {
                         // 儲存認證 token
                         localStorage.setItem('authToken', response.data.token);
                         localStorage.setItem('userInfo', JSON.stringify(response.data.systemUser || response.data.lineUser));
@@ -162,12 +219,20 @@
                         this.updateProgress(80, '登入成功', '準備進入系統');
                         return true;
                     } else {
-                        throw new Error('自動登入失敗');
+                        throw new Error(response.message || '自動登入失敗');
                     }
 
                 } catch (error) {
                     console.error('Auto login error:', error);
-                    this.updateProgress(0, '登入失敗', '請手動登入');
+                    
+                    // 根據錯誤類型提供不同的回饋
+                    if (error.message.includes('網路') || error.message.includes('連線')) {
+                        this.updateProgress(0, '網路連線失敗', '請檢查網路狀態');
+                    } else if (error.message.includes('用戶')) {
+                        this.updateProgress(0, '身份驗證失敗', '無法取得用戶資訊');
+                    } else {
+                        this.updateProgress(0, '登入失敗', error.message || '請手動登入');
+                    }
                     return false;
                 }
             }
@@ -196,63 +261,87 @@
             /**
              * 顯示錯誤頁面
              */
-            showError(message) {
+            showError(message, errorType = 'general') {
+                const errorIcons = {
+                    'network': 'M12 2L2 7v10c0 5.55 3.84 10 9 10s9-4.45 9-10V7l-10-5z',
+                    'auth': 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z',
+                    'general': 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.322 15.5c-.77.833.192 2.5 1.732 2.5z'
+                };
+
+                const errorTitles = {
+                    'network': '網路連線問題',
+                    'auth': '身份驗證失敗',
+                    'general': '載入失敗'
+                };
+
                 document.body.innerHTML = `
                     <div class="min-h-screen flex items-center justify-center bg-red-50">
-                        <div class="text-center">
+                        <div class="text-center max-w-md mx-auto p-6">
                             <div class="w-16 h-16 bg-red-500 rounded-full mx-auto flex items-center justify-center mb-4">
                                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.322 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${errorIcons[errorType]}" />
                                 </svg>
                             </div>
-                            <h1 class="text-2xl font-bold text-red-800 mb-2">載入失敗</h1>
-                            <p class="text-red-600 mb-4">${message}</p>
-                            <button onclick="window.location.reload()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                                重新嘗試
-                            </button>
+                            <h1 class="text-2xl font-bold text-red-800 mb-2">${errorTitles[errorType]}</h1>
+                            <p class="text-red-600 mb-6">${message}</p>
+                            <div class="space-y-2">
+                                <button onclick="window.location.reload()" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors">
+                                    重新嘗試
+                                </button>
+                                <button onclick="window.location.href='index.html'" class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                                    返回首頁
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             }
 
             /**
-             * 初始化並執行載入流程
+             * 更新進度條
              */
-            async init() {
-                try {
-                    this.updateProgress(10, '正在初始化...', '檢查環境設置');
-
-                    // 檢查 LINE 環境
-                    if (!this.isLineEnvironment()) {
-                        console.warn('非 LINE 環境，直接跳轉');
-                        this.updateProgress(50, '環境檢查完成', '準備跳轉');
-                        this.redirectToTargetPage();
-                        return;
-                    }
-
-                    this.updateProgress(20, '檢查 LINE 環境...', 'LINE 環境確認完成');
-
-                    // 執行自動登入
-                    const loginSuccess = await this.performAutoLogin();
-                    
-                    if (loginSuccess) {
-                        this.updateProgress(90, '系統準備完成', '即將進入目標頁面');
-                        setTimeout(() => {
-                            this.redirectToTargetPage();
-                        }, 1000);
-                    } else {
-                        this.showError('無法自動登入，請稍後再試或聯繫系統管理員');
-                    }
-
-                } catch (error) {
-                    console.error('Line entry initialization error:', error);
-                    this.showError('系統初始化失敗：' + error.message);
+            updateProgress(percentage, message, status) {
+                this.progressBar.style.width = percentage + '%';
+                if (message) this.loadingText.textContent = message;
+                if (status) this.statusMessage.textContent = status;
+                
+                // 添加進度條顏色變化
+                if (percentage >= 90) {
+                    this.progressBar.className = 'bg-green-600 h-2 rounded-full transition-all duration-500';
+                } else if (percentage >= 50) {
+                    this.progressBar.className = 'bg-blue-600 h-2 rounded-full transition-all duration-500';
+                } else {
+                    this.progressBar.className = 'bg-blue-400 h-2 rounded-full transition-all duration-500';
                 }
+                
+                console.log(`進度: ${percentage}% - ${message} - ${status}`);
+            }
+        }
+
+        // 初始化 LIFF（如果可用）
+        async function initializeLIFF() {
+            if (typeof liff !== 'undefined') {
+                try {
+                    await liff.init({
+                        liffId: '2000000000-abcdefgh' // ❌ 需要實際的 LIFF ID
+                    });
+                    console.log('LIFF 初始化成功');
+                } catch (error) {
+                    console.error('LIFF 初始化失敗:', error);
+                    // 如果 LIFF 初始化失敗，仍然可以繼續運行
+                    console.warn('將使用開發模式繼續執行');
+                }
+            } else {
+                console.log('LIFF SDK 未載入，使用開發模式');
             }
         }
 
         // 頁面載入完成後開始初始化
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 先初始化 LIFF
+            await initializeLIFF();
+            
+            // 然後初始化 Line Entry Manager
             const lineEntry = new LineEntryManager();
             lineEntry.init();
         });

@@ -15,6 +15,7 @@
 </head>
 <body>
     <div class="mobile-container">
+        <div class="overlay" id="overlay"></div>
 
         <div id="pageSelectSiteForInspection" class="page active">
             <header>
@@ -242,12 +243,24 @@
             }
 
 
-            // 表單輸入時標記未儲存
-            document.querySelectorAll('#pageQuickDefectReport input, #pageQuickDefectReport select, #pageQuickDefectReport textarea')
-                .forEach(input => input.addEventListener('input', () => manageUnsavedChanges(UNSAVED_CONTEXT_QUICK_DEFECT, true)));
+            // 表單輸入時標記未儲存 - 使用事件委派替代直接綁定
+            const quickDefectContainer = document.getElementById('pageQuickDefectReport');
+            if (quickDefectContainer) {
+                quickDefectContainer.addEventListener('input', (e) => {
+                    if (e.target.matches('input, select, textarea')) {
+                        manageUnsavedChanges(UNSAVED_CONTEXT_QUICK_DEFECT, true);
+                    }
+                });
+            }
             
-            document.querySelectorAll('#pageDynamicInspectionInput input, #pageDynamicInspectionInput select, #pageDynamicInspectionInput textarea')
-                .forEach(input => input.addEventListener('input', () => manageUnsavedChanges(UNSAVED_CONTEXT_DYNAMIC_INSPECTION, true)));
+            const dynamicInspectionContainer = document.getElementById('pageDynamicInspectionInput');
+            if (dynamicInspectionContainer) {
+                dynamicInspectionContainer.addEventListener('input', (e) => {
+                    if (e.target.matches('input, select, textarea')) {
+                        manageUnsavedChanges(UNSAVED_CONTEXT_DYNAMIC_INSPECTION, true);
+                    }
+                });
+            }
 
 
             // --- Quick Defect Form Submission ---

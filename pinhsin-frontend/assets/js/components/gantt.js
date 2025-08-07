@@ -33,6 +33,17 @@ export class GanttChart {
     constructor(datesHeaderId, tasksAreaId, tasksData = [], config = {}) {
         this.datesHeaderEl = document.getElementById(datesHeaderId);
         this.tasksAreaEl = document.getElementById(tasksAreaId);
+        
+        if (!this.datesHeaderEl) {
+            console.error(`GanttChart: Dates header element with id "${datesHeaderId}" not found.`);
+            return;
+        }
+        
+        if (!this.tasksAreaEl) {
+            console.error(`GanttChart: Tasks area element with id "${tasksAreaId}" not found.`);
+            return;
+        }
+
         this.tasksData = tasksData;
 
         this.config = {
@@ -117,6 +128,12 @@ export class GanttChart {
 
     render() {
         if (!this.datesHeaderEl || !this.tasksAreaEl) return;
+        
+        // 驗證任務數據
+        if (!Array.isArray(this.tasksData)) {
+            console.warn('GanttChart: tasksData should be an array');
+            this.tasksData = [];
+        }
 
         this.datesHeaderEl.innerHTML = '';
         this.tasksAreaEl.innerHTML = ''; // Clear previous tasks and today marker
@@ -158,8 +175,6 @@ export class GanttChart {
             
             // Adjust taskEndDate to be inclusive for duration calculation
             const inclusiveTaskEndDate = new Date(taskEndDate);
-            inclusiveTaskEndDate.setDate(inclusiveTaskEndDate.getDate());
-
 
             const viewEndDate = new Date(viewStartDate);
             viewEndDate.setDate(viewStartDate.getDate() + daysToShow - 1);
@@ -218,12 +233,17 @@ export class GanttChart {
     }
 
     renderTodayMarker(viewStartDate, daysToShow) {
-        const todayMs = this.today.setHours(0,0,0,0); // Normalize today to start of day
-        const viewStartMs = viewStartDate.setHours(0,0,0,0); // Normalize view start to start of day
+        const today = new Date(this.today);
+        today.setHours(0, 0, 0, 0);
+        const todayMs = today.getTime();
+        
+        const viewStart = new Date(viewStartDate);
+        viewStart.setHours(0, 0, 0, 0);
+        const viewStartMs = viewStart.getTime();
 
-        const viewEndDate = new Date(viewStartDate);
-        viewEndDate.setDate(viewStartDate.getDate() + daysToShow -1);
-        const viewEndMs = viewEndDate.setHours(0,0,0,0);
+        const viewEndDate = new Date(viewStart);
+        viewEndDate.setDate(viewStart.getDate() + daysToShow - 1);
+        const viewEndMs = viewEndDate.getTime();
 
 
         if (todayMs >= viewStartMs && todayMs <= viewEndMs) {

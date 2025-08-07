@@ -3,6 +3,11 @@
  * 整合後端API功能，實現完整的日報管理
  */
 
+// ✅ 添加：依賴檢查和模組導入
+if (typeof api === 'undefined') {
+    console.error('ReportInput: API 客戶端未載入，請確保 api.js 先載入');
+}
+
 /**
  * 條件式載入認證腳本
  * @param {boolean} isLiff - 是否為 LIFF 環境
@@ -165,7 +170,16 @@ document.addEventListener('DOMContentLoaded', async function() {
  */
 async function establishCrossChannelAuth(liffUserId, liffAccessToken) {
     try {
-        const response = await fetch('/api/line/cross-channel-auth', {
+        
+        // ✅ 添加：API 基礎 URL 檢測
+        const apiBaseUrl = window.location.origin;
+        const apiUrl = `${apiBaseUrl}/api/line/cross-channel-auth`;
+        
+        // ✅ 添加：請求超時處理
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超時
+        
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -173,9 +187,24 @@ async function establishCrossChannelAuth(liffUserId, liffAccessToken) {
             body: JSON.stringify({
                 liffUserId: liffUserId,
                 liffAccessToken: liffAccessToken,
-                channelType: 'liff'
-            })
+                channelType: 'liff',
+                timestamp: Date.now()
+            }),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
+        // ✅ 改善：更詳細的回應處理
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => '無法讀取錯誤內容');
+            console.error('跨 Channel 認證 HTTP 錯誤:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorText
+            });
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
         
         const result = await response.json();
         
@@ -193,6 +222,17 @@ async function establishCrossChannelAuth(liffUserId, liffAccessToken) {
         }
     } catch (error) {
         console.error('跨 Channel 身份驗證錯誤:', error);
+
+        // ✅ 添加：降級處理
+        if (error.name === 'AbortError') {
+            console.warn('⏰ 跨 Channel 認證請求超時，將繼續使用 LIFF 模式');
+        } else if (error.message?.includes('Failed to fetch')) {
+            console.warn('🌐 網路連線問題，將繼續使用 LIFF 模式');
+        } else {
+            console.warn('⚠️ 跨 Channel 認證失敗，將繼續使用 LIFF 模式:', error.message);
+        }
+        
+        // 即使認證失敗，也繼續執行（LIFF 模式仍可運作）
     }
 }
 
@@ -279,6 +319,13 @@ class ReportInputManager {
      */
     async loadUserSites() {
         try {
+
+            // ✅ 添加：API 可用性檢查
+            if (typeof api === 'undefined' || !api) {
+                console.warn('API 客戶端未載入，使用預設工地資料');
+                throw new Error('API 客戶端未載入');
+            }
+
             // 獲取用戶所有可存取的日報（從中提取工地信息）
             const response = await this.api.getDailyReports({ limit: 100 });
             
@@ -286,20 +333,31 @@ class ReportInputManager {
                 // 從日報中提取唯一的工地ID
                 const siteIds = [...new Set(response.data.reports.map(report => report.site_id))];
                 
-                // 建立工地列表（這裡簡化為使用ID，實際應該有工地名稱API）
-                this.reportContext.sites = siteIds.map(siteId => ({
-                    id: siteId,
-                    name: `工地 ${siteId}`,
-                    status: 'normal' // 可以根據最新日報狀態判斷
-                }));
+                // ✅ 改善：更完整的工地資料處理
+                if (siteIds.length > 0) {
+                    this.reportContext.sites = siteIds.map(siteId => ({
+                        id: siteId,
+                        name: `工地 ${siteId}`,
+                        status: 'normal'
+                    }));
+                } else {
+                    console.warn('未找到任何工地資料，使用預設工地');
+                    throw new Error('未找到工地資料');
+                }
+            } else {
+                console.warn('載入工地失敗:', response.error);
+                throw new Error('API 回應失敗');
             }
         } catch (error) {
             console.error('Failed to load sites:', error);
+
             // 使用預設工地資料
             this.reportContext.sites = [
                 { id: 1, name: '工地A：市中心建案', status: 'normal' },
                 { id: 2, name: '工地B：山區別墅區', status: 'pending' }
             ];
+            // 顯示友善的錯誤訊息
+            this.showMessage('載入工地列表失敗，使用本地資料', 'warning');
         }
     }
 
@@ -826,6 +884,70 @@ class ReportInputManager {
 
         // 這裡需要根據實際表單結構來收集工作項目、材料、人力等資料
         // 可以實作動態表單項目的收集邏輯
+        
+        // ✅ 改善：收集動態工作項目
+        const workItemElements = document.querySelectorAll('.work-item');
+        workItemElements.forEach((element, index) => {
+            const workTypeSelect = element.querySelector('[name^="work_type_"]');
+            const workContentInput = element.querySelector('[name^="work_content_"]');
+            const progressSelect = element.querySelector('[name^="progress_"]');
+            
+            if (workTypeSelect && workContentInput) {
+                data.work_items.push({
+                    work_type: workTypeSelect.value,
+                    work_content: workContentInput.value,
+                    progress: progressSelect ? progressSelect.value : null,
+                    order_index: index
+                });
+            }
+        });
+
+        // ✅ 改善：收集動態材料記錄
+        const materialElements = document.querySelectorAll('.material-item');
+        materialElements.forEach((element, index) => {
+            const materialNameInput = element.querySelector('[name^="material_name_"]');
+            const quantityInput = element.querySelector('[name^="quantity_"]');
+            const unitSelect = element.querySelector('[name^="unit_"]');
+            const supplierInput = element.querySelector('[name^="supplier_"]');
+            
+            if (materialNameInput && quantityInput) {
+                data.materials.push({
+                    material_name: materialNameInput.value,
+                    quantity: parseFloat(quantityInput.value) || 0,
+                    unit: unitSelect ? unitSelect.value : '',
+                    supplier: supplierInput ? supplierInput.value : '',
+                    order_index: index
+                });
+            }
+        });
+
+        // ✅ 改善：收集動態人力記錄
+        const workerElements = document.querySelectorAll('.worker-item');
+        workerElements.forEach((element, index) => {
+            const workerTypeSelect = element.querySelector('[name^="worker_type_"]');
+            const countInput = element.querySelector('[name^="worker_count_"]');
+            const hoursInput = element.querySelector('[name^="work_hours_"]');
+            const notesInput = element.querySelector('[name^="worker_notes_"]');
+            
+            if (workerTypeSelect && countInput) {
+                data.workers.push({
+                    worker_type: workerTypeSelect.value,
+                    count: parseInt(countInput.value) || 0,
+                    work_hours: parseFloat(hoursInput.value) || 8,
+                    notes: notesInput ? notesInput.value : '',
+                    order_index: index
+                });
+            }
+        });
+
+        // ✅ 添加：資料驗證
+        console.log('建構的日報資料:', {
+            weather: data.weather,
+            dailyNotesLength: data.daily_notes?.length || 0,
+            workItemsCount: data.work_items.length,
+            materialsCount: data.materials.length,
+            workersCount: data.workers.length
+        });
 
         return data;
     }
@@ -881,4 +1003,15 @@ class ReportInputManager {
             submitBtn.textContent = show ? '儲存中...' : '儲存日報';
         }
     }
+}
+
+// ✅ 添加：ES6 模組導出
+export default ReportInputManager;
+export { ReportInputManager, loadAuthScriptIfNeeded, establishCrossChannelAuth };
+
+// ✅ 添加：向後兼容的全域導出
+if (typeof window !== 'undefined') {
+    window.ReportInputManager = ReportInputManager;
+    window.loadAuthScriptIfNeeded = loadAuthScriptIfNeeded;
+    window.establishCrossChannelAuth = establishCrossChannelAuth;
 }

@@ -15,13 +15,24 @@ export class Sidebar {
     }
 
     init() {
+        // ✅ 初始化事件處理器儲存
+        this.boundHandlers = {
+            open: [],
+            close: [],
+            overlayClick: null,
+            escapeKey: null
+        };
+
         this.openTriggers.forEach(trigger => {
             const el = (typeof trigger === 'string') ? document.querySelector(trigger) : trigger;
             if (el) {
-                el.addEventListener('click', (e) => {
+                // ✅ 修正：儲存事件處理器引用
+                const handler = (e) => {
                     e.preventDefault();
                     this.open();
-                });
+                };
+                el.addEventListener('click', handler);
+                this.boundHandlers.open.push({ element: el, handler });
             } else {
                 console.warn('Open trigger not found:', trigger);
             }
@@ -30,14 +41,61 @@ export class Sidebar {
         this.closeTriggers.forEach(trigger => {
             const el = (typeof trigger === 'string') ? document.querySelector(trigger) : trigger;
             if (el) {
-                el.addEventListener('click', (e) => {
+                // ✅ 修正：儲存事件處理器引用
+                const handler = (e) => {
                     e.preventDefault();
                     this.close();
-                });
+                };
+                el.addEventListener('click', handler);
+                this.boundHandlers.close.push({ element: el, handler });
             } else {
                 console.warn('Close trigger not found:', trigger);
             }
         });
+
+        // ✅ 修正：儲存 overlay 點擊處理器
+        if (this.overlayElement) {
+            this.boundHandlers.overlayClick = (e) => {
+                e.preventDefault();
+                this.close();
+            };
+            this.overlayElement.addEventListener('click', this.boundHandlers.overlayClick);
+        }
+
+        // ✅ 修正：儲存 ESC 鍵處理器
+        this.boundHandlers.escapeKey = (e) => {
+            if (e.key === 'Escape' && this.isOpen()) {
+                this.close();
+            }
+        };
+        document.addEventListener('keydown', this.boundHandlers.escapeKey);
+    }
+
+    destroy() {
+        // 移除所有事件監聽器
+        if (this.boundHandlers) {
+            this.boundHandlers.open.forEach(({ element, handler }) => {
+                element.removeEventListener('click', handler);
+            });
+
+            this.boundHandlers.close.forEach(({ element, handler }) => {
+                element.removeEventListener('click', handler);
+            });
+
+            if (this.boundHandlers.overlayClick) {
+                this.overlayElement.removeEventListener('click', this.boundHandlers.overlayClick);
+            }
+
+            if (this.boundHandlers.escapeKey) {
+                document.removeEventListener('keydown', this.boundHandlers.escapeKey);
+            }
+        }
+
+        // 恢復 body 滾動
+        document.body.style.overflow = '';
+        
+        // 清理引用
+        this.boundHandlers = null;
     }
 
     open() {
@@ -52,5 +110,23 @@ export class Sidebar {
         document.body.style.overflow = '';
         this.sidebarElement.classList.remove('open');
         this.overlayElement.classList.remove('active');
+    }
+    /**
+     * 檢查側欄是否開啟
+     * @returns {boolean}
+     */
+    isOpen() {
+        return this.sidebarElement && this.sidebarElement.classList.contains('open');
+    }
+
+    /**
+     * 切換側欄狀態
+     */
+    toggle() {
+        if (this.isOpen()) {
+            this.close();
+        } else {
+            this.open();
+        }
     }
 }

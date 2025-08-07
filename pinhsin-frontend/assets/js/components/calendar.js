@@ -26,14 +26,17 @@ export class Calendar {
         this.prevMonthBtn = document.getElementById(this.options.prevMonthBtnId);
         this.nextMonthBtn = document.getElementById(this.options.nextMonthBtnId);
 
-        if (!this.calendarDaysContainer || !this.currentMonthYearEl || !this.prevMonthBtn || !this.nextMonthBtn) {
-            console.error('One or more calendar DOM elements are missing. Please check IDs:', 
-                this.options.calendarDaysContainerId, 
-                this.options.monthYearDisplayId, 
-                this.options.prevMonthBtnId, 
-                this.options.nextMonthBtnId
-            );
+       if (!this.calendarDaysContainer) {
+            console.error(`Calendar days container with id "${this.options.calendarDaysContainerId}" not found.`);
             return;
+        }
+        
+        if (!this.currentMonthYearEl) {
+            console.warn(`Month/Year display element with id "${this.options.monthYearDisplayId}" not found.`);
+        }
+        
+        if (!this.prevMonthBtn || !this.nextMonthBtn) {
+            console.warn('Navigation buttons not found. Month navigation will be disabled.');
         }
 
         this._bindEvents();
@@ -41,25 +44,45 @@ export class Calendar {
     }
 
     _bindEvents() {
-        this.prevMonthBtn.addEventListener('click', () => {
-            this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() - 1);
-            this.render();
-        });
+        if (this.prevMonthBtn) {
+            this.prevMonthBtn.addEventListener('click', () => {
+                this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() - 1);
+                this.render();
+            });
+        }
 
-        this.nextMonthBtn.addEventListener('click', () => {
-            this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + 1);
-            this.render();
-        });
+        if (this.nextMonthBtn) {
+            this.nextMonthBtn.addEventListener('click', () => {
+                this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + 1);
+                this.render();
+            });
+        }
     }
 
-    render() {
-        if (!this.calendarDaysContainer || !this.currentMonthYearEl) return;
+     render() {
+        // 更寬鬆的檢查，允許沒有月年顯示元素的情況
+        if (!this.calendarDaysContainer) {
+            console.error('Calendar days container not available for rendering.');
+            return;
+        }
 
         this.calendarDaysContainer.innerHTML = ''; // Clear previous days
         const year = this.currentCalendarDate.getFullYear();
         const month = this.currentCalendarDate.getMonth(); // 0-11
 
-        this.currentMonthYearEl.textContent = `${year} 年 ${String(month + 1).padStart(2, '0')} 月`;
+        // 只有在元素存在時才更新月年顯示
+        if (this.currentMonthYearEl) {
+            this.currentMonthYearEl.textContent = `${year} 年 ${String(month + 1).padStart(2, '0')} 月`;
+        }
+
+        // 添加星期標頭
+        const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+        weekdays.forEach(day => {
+            const weekdayDiv = document.createElement('div');
+            weekdayDiv.classList.add('calendar-weekday');
+            weekdayDiv.textContent = day;
+            this.calendarDaysContainer.appendChild(weekdayDiv);
+        });
 
         const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 (Sun) - 6 (Sat)
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -85,9 +108,12 @@ export class Calendar {
                 dayDiv.classList.add(...statusClass.split(' ').filter(Boolean));
             }
             
-            // Highlight today
+            // 統一的今日檢查
             const today = new Date();
-            if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+            const isToday = year === today.getFullYear() && month === today.getMonth() && day === today.getDate();
+            
+            // Highlight today
+            if (isToday) {
                 dayDiv.classList.add('today');
             }
 
@@ -95,9 +121,20 @@ export class Calendar {
             if (this.selectedDate === dateStr) {
                 dayDiv.classList.add('selected');
             }
+
+            // 日期禁用邏輯 - 禁用過去日期
+            const todayCheck = new Date();
+            todayCheck.setHours(0, 0, 0, 0); // 重置時間為00:00:00
+            const currentDate = new Date(year, month, day);
+            const isPastDate = currentDate < todayCheck;
             
-            // Add click event if not disabled
-            if (!dayDiv.classList.contains('disabled')) { // Assuming 'disabled' might be a status class
+            // 標記過去日期為禁用（但不包含今日）
+            if (isPastDate && !isToday) {
+                dayDiv.classList.add('past-date', 'disabled');
+            }
+            
+            // Add click event if not disabled (今日仍可選擇)
+            if (!dayDiv.classList.contains('disabled') || isToday) {
                 dayDiv.addEventListener('click', () => {
                     // Remove 'selected' from previously selected day (if any)
                     const currentlySelected = this.calendarDaysContainer.querySelector('.calendar-day.selected');

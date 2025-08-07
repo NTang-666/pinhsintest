@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="品信工務系統 - 專業的工地管理平台">
+    <meta name="keywords" content="工地管理,日報,進度追蹤,LINE Bot">
     <title>品信工務系統</title>
+    
+    <!-- 字體載入 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="assets/css/common.css">
     <link rel="stylesheet" href="assets/css/components.css">
     <style>
@@ -152,17 +160,53 @@
             const urlParams = new URLSearchParams(window.location.search);
             const page = urlParams.get('page');
             
-            if (page === 'input') {
-                window.location.href = 'pages/report-input.html';
-            } else if (page === 'dashboard') {
-                window.location.href = 'pages/工地儀表板.html';
+            if (page && routeMap[page]) {
+                window.location.href = routeMap[page];
+            } else {
+                console.warn('Unknown page parameter:', page);
             }
         }
         
         // 初始化認證檢查
         document.addEventListener('DOMContentLoaded', function() {
-            // 這裡可以加入認證狀態檢查
             console.log('品信工務系統已載入');
+            
+            // 檢查頁面可用性
+            const links = document.querySelectorAll('.nav-card');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    
+                    // 檢查檔案是否存在
+                    if (href && !href.startsWith('http')) {
+                        console.log(`導航到: ${href}`);
+                        
+                        // 可選：檢查頁面是否可用
+                        fetch(href, { method: 'HEAD' })
+                            .then(response => {
+                                if (!response.ok) {
+                                    console.warn(`頁面可能不存在: ${href}`);
+                                }
+                            })
+                            .catch(error => {
+                                console.warn(`無法檢查頁面: ${href}`, error);
+                            });
+                    }
+                });
+            });
+            
+            // 載入完成動畫
+            const container = document.querySelector('.welcome-container');
+            if (container) {
+                container.style.opacity = '0';
+                container.style.transform = 'translateY(20px)';
+                container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                
+                setTimeout(() => {
+                    container.style.opacity = '1';
+                    container.style.transform = 'translateY(0)';
+                }, 100);
+            }
         });
     </script>
 </body>

@@ -99,6 +99,13 @@ export function showTooltip({ tooltipElement, targetElement, svgContainer, conte
  */
 export function drawLineChart(config) {
     const { svgId, tooltipId, data, isLaborChart, onPointClick } = config;
+    
+    // 增強參數驗證
+    if (!config || typeof config !== 'object') {
+        console.error('Invalid config provided to drawLineChart');
+        return;
+    }
+    
     const svg = document.getElementById(svgId);
     const tooltipElement = document.getElementById(tooltipId);
 
@@ -106,8 +113,9 @@ export function drawLineChart(config) {
         console.warn("SVG or tooltip element not found for chart drawing:", svgId, tooltipId);
         return;
     }
-    if (!data || data.length === 0) {
-        // 清空圖表內容並返回
+    
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        // 清空圖表內容並顯示無數據訊息
         const xAxisLabelsGroup = getOrCreateSVGGroup(svg, 'x-axis-labels-group');
         const dataLine = getOrCreateSVGGroup(svg, 'data-line', 'polyline');
         const dataPointsGroup = getOrCreateSVGGroup(svg, 'data-points-group');
@@ -115,19 +123,38 @@ export function drawLineChart(config) {
         if(xAxisLabelsGroup) xAxisLabelsGroup.innerHTML = '';
         if(dataLine) dataLine.setAttribute('points', '');
         if(dataPointsGroup) dataPointsGroup.innerHTML = '';
-        // 可以考慮顯示 "無數據" 的訊息
+        
+        // ✅ 修正：先移除舊的無數據訊息
+        svg.querySelectorAll('text').forEach(text => {
+            if (text.textContent === '暫無數據') {
+                text.remove();
+            }
+        });
+        
+        // 顯示無數據訊息
+        const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        noDataText.setAttribute('x', '170');
+        noDataText.setAttribute('y', '90');
+        noDataText.setAttribute('text-anchor', 'middle');
+        noDataText.setAttribute('font-size', '14');
+        noDataText.setAttribute('fill', '#999');
+        noDataText.textContent = '暫無數據';
+        svg.appendChild(noDataText);
+        
         return;
     }
 
+     // ✅ 添加：移除舊的無數據訊息（有數據時）
+    svg.querySelectorAll('text').forEach(text => {
+        if (text.textContent === '暫無數據') {
+            text.remove();
+        }
+    });
 
+    // 獲取或創建 SVG 組
     const xAxisLabelsGroup = getOrCreateSVGGroup(svg, 'x-axis-labels-group');
     const dataLine = getOrCreateSVGGroup(svg, 'data-line', 'polyline');
     const dataPointsGroup = getOrCreateSVGGroup(svg, 'data-points-group');
-
-    if (!xAxisLabelsGroup || !dataLine || !dataPointsGroup) {
-        console.error('Failed to get or create SVG groups for chart.');
-        return;
-    }
 
     // 設定折線屬性
     dataLine.setAttribute('fill', 'none');
@@ -183,33 +210,38 @@ export function drawLineChart(config) {
         circle.style.cursor = 'pointer';
         
         circle.addEventListener('click', (e) => {
-            e.stopPropagation(); // 防止觸發 SVG 容器的點擊事件 (如果有的話)
-            hideAllTooltips(); // 點擊新點時先隱藏其他 tooltip
+            try {
+                e.stopPropagation();
+                hideAllTooltips();
 
-            const unit = isLaborChart ? '人' : '萬元';
-            let compareText = '';
-            if (index > 0 && data[index-1] != null) { // 確保前一個數據點存在
-                const diff = item.value - data[index-1].value;
-                const sign = diff >= 0 ? '+' : ''; // 等於0也顯示+
-                compareText = `較前期：${sign}${diff.toFixed(isLaborChart ? 0 : 1)}${unit}`;
-            }
-            
-            const tooltipContent = `
-                <div><strong>${item.label}</strong></div>
-                <div>${isLaborChart ? '人數' : '支出'}：${item.value.toFixed(isLaborChart ? 0 : 1)}${unit}</div>
-                ${compareText ? `<div>${compareText}</div>` : ''}
-            `;
-            
-            showTooltip({
-                tooltipElement: tooltipElement,
-                targetElement: circle,
-                svgContainer: svg,
-                contentHTML: tooltipContent,
-                timeout: 3000 // 3秒後自動隱藏
-            });
+                const unit = isLaborChart ? '人' : '萬元';
+                let compareText = '';
+                
+                if (index > 0 && data[index-1] && typeof data[index-1].value === 'number') {
+                    const diff = item.value - data[index-1].value;
+                    const sign = diff >= 0 ? '+' : '';
+                    compareText = `較前期：${sign}${diff.toFixed(isLaborChart ? 0 : 1)}${unit}`;
+                }
+                
+                const tooltipContent = `
+                    <div><strong>${item.label}</strong></div>
+                    <div>${isLaborChart ? '人數' : '支出'}：${item.value.toFixed(isLaborChart ? 0 : 1)}${unit}</div>
+                    ${compareText ? `<div>${compareText}</div>` : ''}
+                `;
+                
+                showTooltip({
+                    tooltipElement: tooltipElement,
+                    targetElement: circle,
+                    svgContainer: svg,
+                    contentHTML: tooltipContent,
+                    timeout: 3000
+                });
 
-            if (onPointClick && typeof onPointClick === 'function') {
-                onPointClick(item, index, e);
+                if (onPointClick && typeof onPointClick === 'function') {
+                    onPointClick(item, index, e);
+                }
+            } catch (error) {
+                console.error('Error handling chart point click:', error);
             }
         });
         dataPointsGroup.appendChild(circle);

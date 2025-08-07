@@ -253,12 +253,21 @@ class PhotoDatePicker {
         try {
             console.log('📱 LIFF SDK 檢查開始...');
             
-            // 檢查 LIFF SDK 是否載入
+            // ✅ 改善：更健全的 LIFF SDK 檢查
             if (typeof liff === 'undefined') {
-                throw new Error('LIFF SDK 未載入');
+                console.error('❌ LIFF SDK 未載入');
+                throw new Error('LIFF SDK 未載入，請確認頁面是否正確引入 LIFF SDK');
             }
             console.log('✅ LIFF SDK 已載入');
-            
+
+            // ✅ 添加：LIFF SDK 版本檢查
+            try {
+                const liffVersion = liff.getVersion ? liff.getVersion() : 'unknown';
+                console.log('📱 LIFF SDK 版本:', liffVersion);
+            } catch (versionError) {
+                console.warn('⚠️ 無法取得 LIFF SDK 版本:', versionError);
+            }
+
             // 檢查是否在 LINE 客戶端中
             const isInClient = liff.isInClient();
             console.log('📱 是否在 LINE 客戶端:', isInClient);
@@ -270,7 +279,15 @@ class PhotoDatePicker {
             }
 
             console.log('🔄 開始初始化 LIFF，ID:', this.liffId);
-            await liff.init({ liffId: this.liffId });
+
+            // ✅ 添加：LIFF 初始化超時處理
+            const initPromise = liff.init({ liffId: this.liffId });
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('LIFF 初始化超時')), 10000); // 10秒超時
+            });
+
+             await Promise.race([initPromise, timeoutPromise]);
+
             this.isLiffInitialized = true;
             console.log('✅ LIFF 初始化成功');
             
@@ -291,8 +308,8 @@ class PhotoDatePicker {
             console.error('❌ LIFF 錯誤堆疊:', error.stack);
             this.isLiffInitialized = false;
             
-            // 顯示詳細錯誤資訊
-            let errorMessage = '初始化失敗';
+            // ✅ 改善：更詳細的錯誤處理
+            let errorMessage = 'LIFF 初始化失敗';
             if (error.code) {
                 switch (error.code) {
                     case 'LIFF_NOT_SUPPORTED':
@@ -308,9 +325,12 @@ class PhotoDatePicker {
                         errorMessage = 'LIFF 應用被禁止存取';
                         break;
                     default:
-                        errorMessage = `錯誤代碼: ${error.code}`;
+                        errorMessage = `LIFF 錯誤代碼: ${error.code}`;
                 }
+            } else if (error.message?.includes('超時')) {
+                errorMessage = 'LIFF 初始化超時，請檢查網路連線';
             }
+            
             // 詳細錯誤資訊
             const detailMessage = `LIFF ${errorMessage}\n錯誤詳情: ${error.message || error}\nLIFF ID: ${this.liffId}\n用戶代理: ${navigator.userAgent.substring(0, 50)}...`;
             console.error('詳細 LIFF 錯誤:', error);
@@ -390,15 +410,21 @@ class PhotoDatePicker {
     async fetchPhotoCalendarAPI(year, month) {
         console.log('📋 開始呼叫照片日曆 API');
         
-        // 檢查 LIFF 狀態
+        // ✅ 修正：改善 LIFF 狀態檢查
         if (!this.isLiffInitialized) {
             console.warn('⚠️ LIFF 未初始化，將使用模擬資料');
             throw new Error('LIFF 未初始化');
         }
         
-        if (!liff.isLoggedIn()) {
-            console.warn('⚠️ LIFF 用戶未登入，將使用模擬資料');
-            throw new Error('LIFF 用戶未登入');
+        // ✅ 添加：更健全的登入狀態檢查
+        try {
+            if (!liff.isLoggedIn()) {
+                console.warn('⚠️ LIFF 用戶未登入，將使用模擬資料');
+                throw new Error('LIFF 用戶未登入');
+            }
+        } catch (liffError) {
+            console.warn('⚠️ LIFF 登入狀態檢查失敗:', liffError);
+            throw new Error('LIFF 服務異常');
         }
 
         let systemToken;
@@ -425,14 +451,21 @@ class PhotoDatePicker {
         });
         
         try {
+            // ✅ 添加：請求超時處理
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超時
+            
             const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${systemToken}`,
                     'Origin': window.location.origin
-                }
+                },
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
 
             console.log('📥 API 回應狀態:', {
                 url: apiUrl,
@@ -566,8 +599,10 @@ class PhotoDatePicker {
         } catch (fetchError) {
             console.error('❌ API 呼叫失敗:', fetchError);
             
-            // 如果是網路錯誤，提供更友善的錯誤訊息
-            if (fetchError.name === 'TypeError' && fetchError.message.includes('Failed to fetch')) {
+            // ✅ 改善：更友善的錯誤訊息處理
+            if (fetchError.name === 'AbortError') {
+                throw new Error('請求超時，請檢查網路連線或稍後再試');
+            } else if (fetchError.name === 'TypeError' && fetchError.message.includes('Failed to fetch')) {
                 throw new Error('網路連線失敗，請檢查網路狀態或稍後再試');
             }
             
@@ -771,6 +806,9 @@ class PhotoDatePicker {
         const startDate = new Date(firstDay);
         startDate.setDate(1 - firstDay.getDay());
 
+        // ✅ 改善：使用 DocumentFragment 提升效能
+        const fragment = document.createDocumentFragment();
+
         // 清空現有內容
         const existingDays = calendarDays.querySelectorAll('.calendar-day');
         existingDays.forEach(day => day.remove());
@@ -781,8 +819,18 @@ class PhotoDatePicker {
             date.setDate(startDate.getDate() + i);
             
             const dayElement = this.createDayElement(date, month);
-            calendarDays.appendChild(dayElement);
+            fragment.appendChild(dayElement); // ✅ 修正：添加到 fragment 而不是直接添加到 DOM
         }
+        
+        // ✅ 修正：一次性插入所有元素
+        calendarDays.appendChild(fragment);
+        
+        console.log('📅 日曆渲染完成:', {
+            year,
+            month: month + 1,
+            totalDays: 42,
+            photoDataCount: this.photoCalendarData.length
+        });
     }
 
     /**
@@ -1058,5 +1106,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         
     } catch (error) {
         console.error('❌ 初始化失敗:', error);
+
+        // ✅ 添加：更詳細的錯誤處理
+        const loadingEl = document.getElementById('loadingState');
+        if (loadingEl) {
+            loadingEl.innerHTML = `
+                <div style="color: #ff4757; text-align: center; padding: 20px;">
+                    <div style="font-size: 18px; margin-bottom: 10px;">❌ 初始化失敗</div>
+                    <div style="font-size: 14px; margin-bottom: 15px;">${error.message || error}</div>
+                    <button onclick="location.reload()" style="
+                        background: #ff4757; 
+                        color: white; 
+                        border: none; 
+                        padding: 10px 20px; 
+                        border-radius: 8px;
+                        cursor: pointer;
+                    ">重新載入頁面</button>
+                </div>
+            `;
+        }
     }
 });
+
+// ✅ 添加：ES6 模組導出
+export default PhotoDatePicker;
+export { PhotoDatePicker };
+
+// ✅ 添加：向後兼容的全域導出
+if (typeof window !== 'undefined') {
+    window.PhotoDatePicker = PhotoDatePicker;
+}

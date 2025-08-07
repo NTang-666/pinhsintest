@@ -3,6 +3,25 @@ import { GanttChart } from '../components/gantt.js';
 // import { initializeNavigation, setInitialPage, manageUnsavedChanges } from '../utils/navigation.js';
 // import FormHandler from '../utils/form-handler.js'; // 如果 FormHandler 是默認導出
 
+// ✅ 添加：依賴檢查
+if (typeof api === 'undefined') {
+    console.warn('Schedule: API 客戶端未載入，部分功能可能受限');
+}
+
+// 檢查必要的全域函數
+if (typeof initializeNavigation === 'undefined') {
+    console.error('Schedule: initializeNavigation 函數未載入，請確保 navigation.js 先載入');
+}
+
+if (typeof FormHandler === 'undefined') {
+    console.error('Schedule: FormHandler 未載入，請確保 form-handler.js 先載入');
+}
+
+if (typeof manageUnsavedChanges === 'undefined') {
+    console.error('Schedule: manageUnsavedChanges 函數未載入');
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
     // 僅當在工程進度表頁面時才執行
     const ganttDatesHeaderEl = document.getElementById('ganttDatesHeader');
@@ -59,8 +78,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    ganttChartInstance = new GanttChart('ganttDatesHeader', 'ganttTasksArea', scheduleContext.ganttData, ganttConfig);
-    ganttChartInstance.setViewDate(new Date(2025, 4, 27)); // 設置初始視圖日期
+    // ✅ 改善：添加甘特圖初始化錯誤處理
+    try {
+        ganttChartInstance = new GanttChart('ganttDatesHeader', 'ganttTasksArea', scheduleContext.ganttData, ganttConfig);
+        ganttChartInstance.setViewDate(new Date(2025, 4, 27));
+        console.log('✅ 甘特圖初始化成功');
+    } catch (error) {
+        console.error('❌ 甘特圖初始化失敗:', error);
+        
+        // 顯示錯誤訊息給用戶
+        const ganttContainer = document.getElementById('ganttDatesHeader')?.parentElement;
+        if (ganttContainer) {
+            ganttContainer.innerHTML = `
+                <div class="p-4 text-center text-red-500">
+                    <i class="fas fa-exclamation-triangle mb-2"></i>
+                    <p>甘特圖載入失敗，請重新整理頁面</p>
+                    <button onclick="location.reload()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded">重新載入</button>
+                </div>
+            `;
+        }
+        return; // 如果甘特圖初始化失敗，停止執行後續邏輯
+    }
+
+    //ganttChartInstance = new GanttChart('ganttDatesHeader', 'ganttTasksArea', scheduleContext.ganttData, ganttConfig);
+    //ganttChartInstance.setViewDate(new Date(2025, 4, 27)); // 設置初始視圖日期
 
     // --- 甘特圖控制事件監聽 ---
     document.querySelectorAll('.gantt-scale-btn').forEach(btn => {
@@ -137,8 +178,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- 表單相關邏輯 (新增任務) ---
     const addTaskForm = document.getElementById('pageAddTask');
     if (addTaskForm) {
-        document.querySelectorAll('#pageAddTask input, #pageAddTask select, #pageAddTask textarea')
-            .forEach(input => input.addEventListener('input', () => manageUnsavedChanges(UNSAVED_CONTEXT_ADD_TASK, true)));
+       // ✅ 改善：檢查必要函數是否存在
+        if (typeof manageUnsavedChanges === 'function') {
+            document.querySelectorAll('#pageAddTask input, #pageAddTask select, #pageAddTask textarea')
+                .forEach(input => input.addEventListener('input', () => manageUnsavedChanges(UNSAVED_CONTEXT_ADD_TASK, true)));
+        } else {
+            console.warn('manageUnsavedChanges 函數未找到，未保存更改檢查將被跳過');
+        }
 
         const saveTaskBtnHeader = document.getElementById('saveTaskBtn');
         const saveTaskBtnFooter = document.getElementById('saveTaskBtnFooter');
@@ -150,55 +196,113 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         async function addTaskSubmitCallback(formData) {
-            const newTask = {
-                id: 't' + (scheduleContext.ganttData.length + 1 + Math.floor(Math.random() * 1000)),
-                name: formData.taskName,
-                start: formData.taskStartDate,
-                end: formData.taskEndDate,
-                category: formData.taskCategory,
-                predecessor: formData.taskPredecessor,
-                notes: formData.taskNotes
-            };
-            scheduleContext.ganttData.push(newTask);
-            ganttChartInstance.updateTasks(scheduleContext.ganttData); // 更新甘特圖實例的數據並重新渲染
-            alert(`工項「${formData.taskName}」已儲存！(模擬)`);
-            manageUnsavedChanges(UNSAVED_CONTEXT_ADD_TASK, false);
-            // 導航回 pageGanttMain 的邏輯應由 navigation.js 處理，
-            // 這裡確保數據已更新且 unsaved flag 已清除。
+            try {
+                // ✅ 添加：日期驗證
+                const startDate = new Date(formData.taskStartDate);
+                const endDate = new Date(formData.taskEndDate);
+                
+                if (endDate < startDate) {
+                    alert('結束日期不能早於開始日期');
+                    return;
+                }
+
+                const newTask = {
+                    id: 't' + (scheduleContext.ganttData.length + 1 + Math.floor(Math.random() * 1000)),
+                    name: formData.taskName,
+                    start: formData.taskStartDate,
+                    end: formData.taskEndDate,
+                    category: formData.taskCategory || 'cat1',
+                    predecessor: formData.taskPredecessor || '',
+                    notes: formData.taskNotes || ''
+                };
+                
+                scheduleContext.ganttData.push(newTask);
+                
+                // ✅ 改善：甘特圖更新錯誤處理
+                if (ganttChartInstance) {
+                    try {
+                        ganttChartInstance.updateTasks(scheduleContext.ganttData);
+                        console.log('✅ 甘特圖資料更新成功');
+                    } catch (updateError) {
+                        console.error('甘特圖資料更新失敗:', updateError);
+                        // 即使甘特圖更新失敗，任務仍已添加到資料中
+                    }
+                } else {
+                    console.warn('甘特圖實例不存在，跳過視覺更新');
+                }
+                
+                alert(`工項「${formData.taskName}」已儲存！`);
+                
+                if (typeof manageUnsavedChanges === 'function') {
+                    manageUnsavedChanges(UNSAVED_CONTEXT_ADD_TASK, false);
+                }
+                
+                console.log('新增任務完成:', newTask);
+            } catch (error) {
+                console.error('新增任務失敗:', error);
+                alert('新增任務失敗，請稍後再試');
+            }
         }
-        
-        if (saveTaskBtnHeader) {
-            FormHandler.handleFormSubmit(
-                addTaskForm,
-                saveTaskBtnHeader,
-                addTaskSubmitCallback,
-                addTaskValidationRules,
-                null // beforeSubmit
-            );
-        }
-        if (saveTaskBtnFooter) {
-             FormHandler.handleFormSubmit(
-                addTaskForm,
-                saveTaskBtnFooter,
-                addTaskSubmitCallback,
-                addTaskValidationRules,
-                null // beforeSubmit
-            );
+
+        // ✅ 改善：FormHandler 存在性檢查
+        if (typeof FormHandler !== 'undefined') {
+            if (saveTaskBtnHeader) {
+                FormHandler.handleFormSubmit(
+                    addTaskForm,
+                    saveTaskBtnHeader,
+                    addTaskSubmitCallback,
+                    addTaskValidationRules,
+                    null
+                );
+            }
+            if (saveTaskBtnFooter) {
+                FormHandler.handleFormSubmit(
+                    addTaskForm,
+                    saveTaskBtnFooter,
+                    addTaskSubmitCallback,
+                    addTaskValidationRules,
+                    null
+                );
+            }
+        } else {
+            console.error('FormHandler 未載入，表單提交功能將無法正常運作');
         }
     }
 
     function clearAddTaskForm() {
         const formElement = document.getElementById('pageAddTask');
         if (formElement) {
-            FormHandler.clearForm(formElement);
-            FormHandler.setFormFieldValue(formElement, 'taskCategory', 'cat1');
-            const today = new Date().toISOString().split('T')[0];
-            const nextWeekDate = new Date();
-            nextWeekDate.setDate(nextWeekDate.getDate() + 7);
-            FormHandler.setFormFieldValue(formElement, 'taskStartDate', today);
-            FormHandler.setFormFieldValue(formElement, 'taskEndDate', nextWeekDate.toISOString().split('T')[0]);
+            // ✅ 改善：FormHandler 存在性檢查
+            if (typeof FormHandler !== 'undefined') {
+                FormHandler.clearForm(formElement);
+                FormHandler.setFormFieldValue(formElement, 'taskCategory', 'cat1');
+                
+                const today = new Date().toISOString().split('T')[0];
+                const nextWeekDate = new Date();
+                nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+                
+                FormHandler.setFormFieldValue(formElement, 'taskStartDate', today);
+                FormHandler.setFormFieldValue(formElement, 'taskEndDate', nextWeekDate.toISOString().split('T')[0]);
+            } else {
+                // 手動清空表單
+                formElement.reset();
+                const categorySelect = formElement.querySelector('[name="taskCategory"]');
+                if (categorySelect) categorySelect.value = 'cat1';
+                
+                const today = new Date().toISOString().split('T')[0];
+                const nextWeekDate = new Date();
+                nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+                
+                const startDateInput = formElement.querySelector('[name="taskStartDate"]');
+                const endDateInput = formElement.querySelector('[name="taskEndDate"]');
+                if (startDateInput) startDateInput.value = today;
+                if (endDateInput) endDateInput.value = nextWeekDate.toISOString().split('T')[0];
+            }
         }
-        manageUnsavedChanges(UNSAVED_CONTEXT_ADD_TASK, false);
+        
+        if (typeof manageUnsavedChanges === 'function') {
+            manageUnsavedChanges(UNSAVED_CONTEXT_ADD_TASK, false);
+        }
     }
 
     // --- 導航設定 (從 HTML 移至此處，並與 scheduleContext 集成) ---
@@ -319,3 +423,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// ✅ 添加：ES6 模組導出
+export default { scheduleContext: null }; // 導出一個包含上下文的對象
+export { GanttChart }; // 重新導出 GanttChart 以供其他模組使用
+
+// ✅ 添加：向後兼容的全域導出
+if (typeof window !== 'undefined') {
+    window.SchedulePage = {
+        ganttChartInstance: null,
+        scheduleContext: null
+    };
+}

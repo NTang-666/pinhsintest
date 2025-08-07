@@ -4,16 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>品信工務系統 - 老闆儀表板</title>
+
+    <!-- LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+     <!-- vConsole for mobile debugging -->
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // 初始化 vConsole (手機調試工具)
+        if (typeof VConsole !== 'undefined') {
+            var vConsole = new VConsole();
+            console.log('🔧 vConsole 已啟用 - 點擊右下角綠色按鈕查看調試資訊');
+        }
+    </script>
+    
     <link rel="stylesheet" href="../assets/css/common.css">
     <link rel="stylesheet" href="../assets/css/components.css">
+
+    <script>
+        // LIFF 初始化邏輯
+        function initializeLIFF() {
+            if (typeof liff !== 'undefined') {
+                liff.init({
+                    liffId: 'YOUR_LIFF_ID' // 需要實際的 LIFF ID
+                }).then(() => {
+                    console.log('LIFF initialized for Boss Dashboard');
+                    // 可以在這裡添加老闆特定的 LIFF 功能
+                }).catch((err) => {
+                    console.error('LIFF initialization failed', err);
+                });
+            }
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化 LIFF
+            initializeLIFF();
+        });
+    </script>
 </head>
 <body>
     <div class="mobile-container">
+
+        <!-- 載入狀態指示器 -->
+        <div id="loadingIndicator" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">載入中...</div>
+        </div>
+
+        <div class="overlay" id="overlay"></div>
         <!-- 工地列表頁面 -->
         <div id="pageSiteList" class="page active">
             <header class="page-header">
@@ -241,15 +287,52 @@
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
     </div>
 
-    <script src="../assets/js/utils/navigation.js"></script>
-    <script src="../assets/js/utils/form-handler.js"></script>
+    <!-- API 腳本 -->
+    <script src="../assets/js/api.js"></script>
+    
+   <!-- 側邊欄組件 -->
+    <script src="../assets/js/components/sidebar.js"></script>
+
+    <script src="../assets/js/utils/navigation.js" onerror="console.error('Failed to load navigation.js')"></script>
+    <script src="../assets/js/utils/form-handler.js" onerror="console.error('Failed to load form-handler.js')"></script>
     <!-- 引入模組化的圖表腳本 -->
-    <script type="module" src="../assets/js/utils/chart-utils.js"></script>
+    <script type="module" src="../assets/js/utils/chart-utils.js" onerror="console.error('Failed to load chart-utils.js')"></script>
     <!-- dashboard.js 會導入 gantt.js，所以這裡不需要單獨引入 gantt.js -->
-    <script type="module" src="../assets/js/pages/dashboard.js"></script>
+    <script type="module" src="../assets/js/pages/dashboard.js" onerror="console.error('Failed to load dashboard.js')"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const startTime = performance.now();
+            console.log('🚀 Boss Dashboard 開始初始化');
+
+            // 初始化 LIFF
+            if (typeof initializeLIFF === 'function') {
+                initializeLIFF();
+            }
+            
+            // 檢查必要依賴 - 添加延遲等待腳本載入
+            setTimeout(() => {
+                const requiredGlobals = ['FormHandler', 'initializeNavigation', 'setInitialPage'];
+                const missingDependencies = requiredGlobals.filter(dep => typeof window[dep] === 'undefined');
+                
+                if (missingDependencies.length > 0) {
+                    console.warn('Missing dependencies after timeout:', missingDependencies);
+                }
+            }, 500);
+            
+            // DOM 元素檢查
+            const requiredElements = ['siteListContainer', 'filterCriteria', 'sortOrder'];
+            const missingElements = requiredElements.filter(id => !document.getElementById(id));
+            
+            if (missingElements.length > 0) {
+                console.error('Missing required DOM elements:', missingElements);
+                // 提供更詳細的錯誤資訊
+                missingElements.forEach(elementId => {
+                    console.error(`Element with ID '${elementId}' not found in DOM`);
+                });
+                return;
+            }
+            
             // DOM 元素 (非導航相關, 非圖表相關, 非甘特圖相關)
             const siteListContainer = document.getElementById('siteListContainer');
             const filterCriteriaSelect = document.getElementById('filterCriteria');
@@ -266,7 +349,7 @@
                 { id: 'delta', name: '工地 Delta (偏鄉校舍重建)', progress_delay: 0, cost_overrun_risk: 2, expiry_days: 30, defects: 2 }
             ];
 
-            function renderSiteCards() {
+                function renderSiteCards() {
                 if (!siteListContainer || !filterCriteriaSelect || !sortOrderSelect) return;
                 siteListContainer.innerHTML = '';
                 
@@ -275,11 +358,24 @@
                     console.warn('Filter controls element not found for renderSiteCards.');
                     return;
                 }
-                // 假設 FormHandler 是全局可用的，或者已通過其他方式引入
-                const filterData = window.FormHandler ? window.FormHandler.getFormData(filterControlsElement) : { filterCriteria: 'progress_delay', sortOrder: 'desc' };
-                let currentFilter = filterData.filterCriteria;
-                let currentSortOrder = filterData.sortOrder;
-                let sitesToRender = [...mockSitesData];
+                
+                // 改善 FormHandler 檢查
+                let filterData;
+                if (window.FormHandler && typeof window.FormHandler.getFormData === 'function') {
+                    filterData = window.FormHandler.getFormData(filterControlsElement);
+                } else {
+                    // Fallback: 直接獲取表單值
+                    console.warn('FormHandler not available, using fallback method');
+                    filterData = {
+                        filterCriteria: filterCriteriaSelect.value || 'progress_delay',
+                        sortOrder: sortOrderSelect.value || 'desc'
+                    };
+                }
+
+                // 添加缺少的變數宣告
+                const currentFilter = filterData.filterCriteria;
+                const currentSortOrder = filterData.sortOrder;
+                let sitesToRender = [...mockSitesData]; // 複製陣列避免修改原始資料
 
                 sitesToRender.sort((a, b) => {
                     let valA, valB;
@@ -367,26 +463,36 @@
                     }
                 ];
                 const currentActivePageId = window._navigationContext?.currentPageId || 'pageSiteList';
-                if (typeof window.initializeNavigation === 'function') {
+                try {
                     window.initializeNavigation(navConfigs, { currentPageId: currentActivePageId });
+                } catch (error) {
+                    console.error('Failed to initialize navigation:', error);
                 }
             }
 
             // Initial Setup
             const initialPageId = document.querySelector('.page.active')?.id || 'pageSiteList';
+            
             if (typeof window.setInitialPage === 'function') {
-                 window.setInitialPage(initialPageId); 
-            }
-
-            if (initialPageId === 'pageSiteList') {
-                renderSiteCards(); 
+                try {
+                    window.setInitialPage(initialPageId);
+                    console.log(`Initial page set to: ${initialPageId}`);
+                } catch (error) {
+                    console.error('Failed to set initial page:', error);
+                }
             } else {
-                initializeBossDashboardNavigation();
+                console.warn('setInitialPage function not available - using default active page');
             }
             
             // generateGanttTimeline(); // 已被移除，由 dashboard.js 中的 GanttChart 處理
             
             // 圖表相關的初始化已移至 dashboard.js
+
+            // 性能監控 - 初始化完成
+            const endTime = performance.now();
+            const initTime = (endTime - startTime).toFixed(2);
+            console.log(`✅ Boss Dashboard 初始化完成，耗時: ${initTime}ms`);
+
         });
     </script>
 </body>

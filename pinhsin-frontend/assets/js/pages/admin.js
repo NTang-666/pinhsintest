@@ -3,6 +3,10 @@
  * 管理員功能邏輯和交互處理
  */
 
+// ✅ 添加：依賴檢查
+if (typeof api === 'undefined') {
+    console.error('AdminPanel: API 客戶端未載入，請確保 api.js 先載入');
+}
 class AdminPanel {
     constructor() {
         this.currentPage = 'dashboard';
@@ -91,11 +95,20 @@ class AdminPanel {
         const sidebar = document.getElementById('adminSidebar');
         const isMobile = window.innerWidth <= 1023;
         
+        console.log('toggleSidebar 被調用, 螢幕寬度:', window.innerWidth, '是否為手機版:', isMobile);
+        
+        if (!sidebar) {
+            console.error('找不到 adminSidebar 元素');
+            return;
+        }
+        
         if (isMobile) {
             sidebar.classList.toggle('mobile-open');
+            console.log('手機版模式，切換 mobile-open 類別，當前狀態:', sidebar.classList.contains('mobile-open'));
         } else {
             sidebar.classList.toggle('collapsed');
             this.sidebarCollapsed = !this.sidebarCollapsed;
+            console.log('桌面版模式，切換 collapsed 類別，當前狀態:', sidebar.classList.contains('collapsed'));
         }
     }
     
@@ -718,6 +731,107 @@ class AdminPanel {
             modal.classList.remove('active');
         });
     }
+
+    // --- HR 密碼設定功能 ---
+    
+    /**
+     * 開啟 HR 密碼設定模態框
+     */
+    async openHrPasswordModal() {
+        try {
+            // 載入所有員工列表
+            const response = await api.get('/admin/users');
+            if (response.success) {
+                const employees = response.data.filter(user => 
+                    user.role === 'site-manager' && 
+                    !user.username // 只顯示還沒有帳號密碼的員工
+                );
+                
+                const select = document.getElementById('hrEmployeeSelect');
+                select.innerHTML = '<option value="">請選擇</option>';
+                
+                employees.forEach(employee => {
+                    const option = document.createElement('option');
+                    option.value = employee.id;
+                    option.textContent = `${employee.employee_number || employee.id} / ${employee.name}`;
+                    option.dataset.name = employee.name;
+                    select.appendChild(option);
+                });
+                
+                // 員工選擇變更時清空表單
+                select.addEventListener('change', (e) => {
+                    const usernameInput = document.getElementById('hrUsernameInput');
+                    usernameInput.value = ''; // 讓管理員手動輸入管理員帳號
+                });
+                
+                // 清空表單
+                document.getElementById('hrPasswordForm').reset();
+                document.getElementById('hrUsernameInput').value = '';
+                
+                // 顯示模態框
+                document.getElementById('hrPasswordModal').style.display = 'flex';
+            }
+        } catch (error) {
+            console.error('載入員工列表失敗:', error);
+            this.showToast('載入員工列表失敗', 'error');
+        }
+    }
+    
+    /**
+     * 關閉 HR 密碼設定模態框
+     */
+    closeHrPasswordModal() {
+        document.getElementById('hrPasswordModal').style.display = 'none';
+    }
+    
+    /**
+     * 儲存 HR 密碼設定
+     */
+    async saveHrPassword() {
+        const form = document.getElementById('hrPasswordForm');
+        const formData = new FormData(form);
+        
+        const employeeId = formData.get('employee');
+        const username = formData.get('username');
+        const password = formData.get('password');
+        const confirmPassword = formData.get('confirmPassword');
+        
+        // 基本驗證
+        if (!employeeId || !username || !password || !confirmPassword) {
+            this.showToast('請填寫所有必填欄位', 'warning');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            this.showToast('密碼確認不一致', 'warning');
+            return;
+        }
+        
+        if (password.length < 6) {
+            this.showToast('密碼至少需要 6 個字元', 'warning');
+            return;
+        }
+        
+        try {
+            // 呼叫後端 API 指派 HR
+            const response = await api.post('/admin/assign-hr', {
+                employeeId: employeeId,
+                username: username,
+                password: password
+            });
+            
+            if (response.success) {
+                this.showToast('成功指派 HR 並設定密碼', 'success');
+                this.closeHrPasswordModal();
+                this.loadUsersData(); // 重新載入用戶列表
+            } else {
+                this.showToast(response.error?.message || '指派失敗', 'error');
+            }
+        } catch (error) {
+            console.error('指派 HR 失敗:', error);
+            this.showToast('指派 HR 失敗', 'error');
+        }
+    }
     
     /**
      * 處理視窗大小變化
@@ -891,6 +1005,8 @@ class AdminPanel {
         document.getElementById('calendarMonthYear').textContent = `${year}年 ${month + 1}月`;
 
         const calendarBody = document.getElementById('calendarBody');
+        if (!calendarBody) return; // ✅ 添加：元素存在檢查
+
         calendarBody.innerHTML = '<div class="loading-spinner"></div>'; // 顯示加載動畫
 
         try {
@@ -933,6 +1049,7 @@ class AdminPanel {
         } catch (error) {
             console.error('渲染日曆失敗:', error);
             calendarBody.innerHTML = '<p class="text-danger">載入班表失敗</p>';
+            this.showToast('載入班表失敗', 'error');
         }
     }
 
@@ -1671,3 +1788,12 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);
+
+// ✅ 添加：ES6 模組導出
+export default AdminPanel;
+export { AdminPanel };
+
+// ✅ 添加：向後兼容的全域導出
+if (typeof window !== 'undefined') {
+    window.AdminPanel = AdminPanel;
+}

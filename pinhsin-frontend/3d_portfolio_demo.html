@@ -16,7 +16,7 @@
             background-color: #ffffff;
             color: #333333;
             line-height: 1.6;
-            min-width: 1200px; /* 確保桌面版最小寬度 */
+            /* min-width: 1200px; */
         }
 
         /* 頂部導航列 */
@@ -298,6 +298,33 @@
             box-shadow: 0 10px 50px rgba(0,0,0,0.3);
         }
 
+        /* 移動端模態框調整 */
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 1% auto;
+                width: 95%;
+                height: 95%;
+                border-radius: 0;
+            }
+            
+            .modal-header {
+                padding: 15px 20px;
+            }
+            
+            .modal-title {
+                font-size: 1.1rem;
+            }
+            
+            .modal-controls {
+                gap: 10px;
+            }
+            
+            .control-button {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }    
+
         .modal-header {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: #fff;
@@ -429,17 +456,62 @@
             to { opacity: 1; }
         }
 
-        /* 響應式調整 - 僅針對大屏幕 */
+        /* 響應式調整 - 改善移動端支援 */
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+                padding: 0 15px;
+                gap: 15px;
+            }
+            
+            .nav-menu {
+                display: none; /* 移動端隱藏導航，需要漢堡選單 */
+            }
+            
+            .page-title {
+                font-size: 1.8rem;
+            }
+            
+            .page-subtitle {
+                font-size: 1rem;
+                padding: 0 20px;
+            }
+            
+            .filter-tabs {
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+            
+            .filter-tab {
+                border-radius: 6px !important;
+                border: 1px solid #dee2e6 !important;
+                margin-bottom: 5px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1025px) and (max-width: 1400px) {
+            .grid-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1401px) {
+            .grid-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
         @media (min-width: 1600px) {
             .grid-container {
                 grid-template-columns: repeat(5, 1fr);
                 max-width: 1600px;
-            }
-        }
-
-        @media (max-width: 1400px) {
-            .grid-container {
-                grid-template-columns: repeat(3, 1fr);
             }
         }
 
@@ -459,6 +531,18 @@
 
         .info-panel.open {
             right: 0;
+        }
+
+        /* 移動端資訊面板調整 */
+        @media (max-width: 768px) {
+            .info-panel {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .info-panel.open {
+                right: 0;
+            }
         }
 
         .info-panel-header {
@@ -526,6 +610,8 @@
             <div class="modal-header">
                 <h3 class="modal-title" id="modal-title">3D作品瀏覽</h3>
                 <div class="modal-controls">
+                    <button class="control-button" onclick="previousProject()">⬅️ 上一個</button>
+                    <button class="control-button" onclick="nextProject()">➡️ 下一個</button>
                     <button class="control-button" onclick="toggleFullscreen()">🔳 全螢幕</button>
                     <button class="control-button" onclick="resetView()">🔄 重置視角</button>
                     <button class="control-button" onclick="showInfo()">ℹ️ 專案資訊</button>
@@ -723,6 +809,11 @@
             const iframe = document.getElementById('twinmotion-iframe');
             const placeholder = document.getElementById('iframe-placeholder');
             
+            if (!modal || !modalTitle || !iframe || !placeholder) {
+                console.error('模態框元素未找到');
+                return;
+            }
+            
             modalTitle.textContent = `${project.title} - 3D互動瀏覽`;
             
             // 檢查是否有設定對應的 Twinmotion URL
@@ -733,6 +824,20 @@
                 iframe.src = twinmotionUrl;
                 iframe.style.display = 'block';
                 placeholder.style.display = 'none';
+                
+                // 添加載入錯誤處理
+                iframe.onerror = function() {
+                    console.error('Twinmotion 內容載入失敗');
+                    iframe.style.display = 'none';
+                    placeholder.style.display = 'flex';
+                    placeholder.innerHTML = `
+                        <div class="placeholder-icon">⚠️</div>
+                        <h3 class="placeholder-title">載入失敗</h3>
+                        <p class="placeholder-description">
+                            無法載入 3D 內容，請檢查網址是否正確或網路連線狀態
+                        </p>
+                    `;
+                };
             } else {
                 // 顯示設定說明
                 iframe.style.display = 'none';
@@ -874,14 +979,36 @@
 
         // 鍵盤快捷鍵
         document.addEventListener('keydown', function(e) {
+            // 只在模態框開啟時才響應快捷鍵
+            const isModalOpen = document.getElementById('viewer-modal').style.display === 'block';
+            
             if (e.key === 'Escape') {
-                close3DViewer();
+                if (isModalOpen) {
+                    const infoPanel = document.getElementById('info-panel');
+                    if (infoPanel.classList.contains('open')) {
+                        closeInfoPanel();
+                    } else {
+                        close3DViewer();
+                    }
+                }
             } else if (e.key === 'F11') {
                 e.preventDefault();
-                toggleFullscreen();
+                if (isModalOpen) {
+                    toggleFullscreen();
+                }
             } else if (e.key === 'i' || e.key === 'I') {
-                if (document.getElementById('viewer-modal').style.display === 'block') {
+                if (isModalOpen) {
                     showInfo();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (isModalOpen) {
+                    e.preventDefault();
+                    previousProject();
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (isModalOpen) {
+                    e.preventDefault();
+                    nextProject();
                 }
             }
         });
@@ -924,6 +1051,89 @@
         //         searchProjects(e.target.value);
         //     });
         // }
+        // 觸控設備支援 - 添加在這裡
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipeGesture();
+        }
+
+        function handleSwipeGesture() {
+            const swipeThreshold = 50;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+            
+            // 檢查是否在模態框中
+            const modal = document.getElementById('viewer-modal');
+            const isModalOpen = modal.style.display === 'block';
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // 水平滑動
+                if (Math.abs(diffX) > swipeThreshold) {
+                    if (diffX > 0) {
+                        // 向左滑動 - 下一個專案
+                        if (isModalOpen) {
+                            nextProject();
+                        }
+                    } else {
+                        // 向右滑動 - 上一個專案
+                        if (isModalOpen) {
+                            previousProject();
+                        }
+                    }
+                }
+            } else {
+                // 垂直滑動
+                if (Math.abs(diffY) > swipeThreshold) {
+                    if (diffY > 0) {
+                        // 向上滑動 - 顯示資訊面板
+                        if (isModalOpen) {
+                            showInfo();
+                        }
+                    } else {
+                        // 向下滑動 - 關閉模態框或面板
+                        if (isModalOpen) {
+                            const infoPanel = document.getElementById('info-panel');
+                            if (infoPanel.classList.contains('open')) {
+                                closeInfoPanel();
+                            } else {
+                                close3DViewer();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 添加觸控事件監聽
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchend', handleTouchEnd, false);
+
+        // 專案切換功能
+        function nextProject() {
+            const currentIndex = allProjects.findIndex(p => p.id === window.currentProject?.id);
+            if (currentIndex !== -1 && currentIndex < allProjects.length - 1) {
+                open3DViewer(allProjects[currentIndex + 1]);
+            }
+        }
+
+        function previousProject() {
+            const currentIndex = allProjects.findIndex(p => p.id === window.currentProject?.id);
+            if (currentIndex > 0) {
+                open3DViewer(allProjects[currentIndex - 1]);
+            }
+        }
+
     </script>
 </body>
 </html>

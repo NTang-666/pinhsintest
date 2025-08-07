@@ -12,13 +12,13 @@
  * @param {HTMLFormElement | HTMLElement} formOrContainerElement The form or container element to collect data from.
  * @returns {Object} An object containing form data.
  */
-function getFormData(formOrContainerElement) {
+export function getFormData(formOrContainerElement) {
     const data = {};
     // If it's a form, FormData can be used directly for simple cases.
     if (formOrContainerElement.tagName === 'FORM') {
         const formData = new FormData(formOrContainerElement);
         for (const [key, value] of formData.entries()) {
-            if (data.hasOwnProperty(key)) {
+            if (key in data) { // 改用 'in' 操作符
                 if (!Array.isArray(data[key])) {
                     data[key] = [data[key]];
                 }
@@ -34,19 +34,17 @@ function getFormData(formOrContainerElement) {
             let value;
             if (field.type === 'checkbox') {
                 value = field.checked;
-            } else if (field.type === 'radio') {
+             } else if (field.type === 'radio') {
                 if (field.checked) {
                     value = field.value;
                 } else {
-                    // Don't set value if radio is not checked, unless it's the first one and no other is checked
-                    if (!data.hasOwnProperty(key)) data[key] = null; // Default if no radio in group is checked
-                    return; 
+                    return; // 跳過未選中的 radio，不設定預設值
                 }
             } else {
                 value = field.value;
             }
 
-            if (data.hasOwnProperty(key)) {
+            if (key in data) { // 改用 'in' 操作符
                 if (!Array.isArray(data[key])) {
                     data[key] = [data[key]];
                 }
@@ -66,28 +64,28 @@ function getFormData(formOrContainerElement) {
  *                       Example rule: { required: true, message: 'Field is mandatory', pattern: /regex/, custom: (value, formData) => errorMsg || null }
  * @returns {{isValid: boolean, errors: Object}} Validation result.
  */
-function validateForm(formOrContainerElement, rules = {}) {
+export function validateForm(formOrContainerElement, rules = {}) {
     const errors = {};
     let isValid = true;
-    const currentData = getFormData(formOrContainerElement); // Use internal getFormData for consistency
+    const currentData = getFormData(formOrContainerElement);
 
     for (const fieldName in rules) {
         const ruleSet = rules[fieldName];
-        const value = currentData[fieldName]; // Value from getFormData
-
-        // Find the actual field element for focusing or marking (optional)
+        const value = currentData[fieldName];
         const fieldElement = formOrContainerElement.querySelector(`[name="${fieldName}"]`);
 
+        // 先清除之前的錯誤類別
+        if(fieldElement) fieldElement.classList.remove('form-field-error');
+        
         if (ruleSet.required) {
             let isEmpty = false;
             if (typeof value === 'string') isEmpty = !value.trim();
-            else if (typeof value === 'boolean') isEmpty = (value === false && ruleSet.required === true); // e.g. required checkbox
+            else if (typeof value === 'boolean') isEmpty = (value === false && ruleSet.required === true);
             else if (value === null || value === undefined) isEmpty = true;
             
             if (isEmpty) {
                 isValid = false;
                 errors[fieldName] = ruleSet.message || `${fieldName} is required.`;
-                // Optional: add error class to fieldElement
                 if(fieldElement) fieldElement.classList.add('form-field-error');
                 continue; 
             }
@@ -108,9 +106,8 @@ function validateForm(formOrContainerElement, rules = {}) {
                 if(fieldElement) fieldElement.classList.add('form-field-error');
             }
         }
-        // Optional: remove error class if valid
-        if(fieldElement && !errors[fieldName]) fieldElement.classList.remove('form-field-error');
     }
+    
     return { isValid, errors };
 }
 
@@ -123,7 +120,7 @@ function validateForm(formOrContainerElement, rules = {}) {
  * @param {Function} [beforeSubmitCallback=null] Optional async callback before submission (e.g., for confirmation). Should return a Promise resolving to boolean.
  * @param {Function} [afterSubmitCallback=null] Optional callback after successful submission.
  */
-function handleFormSubmit(formOrContainerElement, submitTriggerElement, submitCallback, validationRules = {}, beforeSubmitCallback = null, afterSubmitCallback = null) {
+export function handleFormSubmit(formOrContainerElement, submitTriggerElement, submitCallback, validationRules = {}, beforeSubmitCallback = null, afterSubmitCallback = null) {
     if (!submitTriggerElement) {
         console.error('Submit trigger element not provided for handleFormSubmit.');
         return;
@@ -177,9 +174,8 @@ function handleFormSubmit(formOrContainerElement, submitTriggerElement, submitCa
  * Clears all input fields, select elements, and textareas within a form or container.
  * @param {HTMLFormElement | HTMLElement} formOrContainerElement The form or container element.
  */
-function clearForm(formOrContainerElement) {
+export function clearForm(formOrContainerElement) {
     formOrContainerElement.querySelectorAll('input, select, textarea').forEach(el => {
-        const fieldName = el.name;
         if (el.type === 'checkbox' || el.type === 'radio') {
             el.checked = false;
         } else if (el.tagName === 'SELECT') {
@@ -206,7 +202,7 @@ function clearForm(formOrContainerElement) {
  * @param {Function} [updateLabelsCallback] Optional callback to update labels/indices of items. Receives container and itemSelector.
  * @returns {HTMLElement | null} The newly added item element (the first child of the parsed template), or null.
  */
-function addDynamicFormItem(containerElement, itemTemplateHtml, eventListenersSetupCallback, itemSelector = '', updateLabelsCallback) {
+export function addDynamicFormItem(containerElement, itemTemplateHtml, eventListenersSetupCallback, itemSelector = '', updateLabelsCallback) {
     if (!containerElement) {
         console.error('Dynamic item container not found.');
         return null;
@@ -247,7 +243,7 @@ function addDynamicFormItem(containerElement, itemTemplateHtml, eventListenersSe
  * @param {HTMLElement} [containerElement] Optional. The container of the items, for re-indexing.
  * @param {Function} [updateLabelsCallback] Optional callback to update labels/indices of remaining items.
  */
-function removeDynamicFormItem(triggerElement, itemSelector, containerElement, updateLabelsCallback) {
+export function removeDynamicFormItem(triggerElement, itemSelector, containerElement, updateLabelsCallback) {
     const itemToRemove = triggerElement.closest(itemSelector);
     if (itemToRemove) {
         itemToRemove.remove();
@@ -269,7 +265,7 @@ function removeDynamicFormItem(triggerElement, itemSelector, containerElement, u
  * @param {string} fieldName The 'name' attribute of the field.
  * @param {any} value The value to set.
  */
-function setFormFieldValue(formOrContainerElement, fieldName, value) {
+export function setFormFieldValue(formOrContainerElement, fieldName, value) {
     const field = formOrContainerElement.querySelector(`[name="${fieldName}"]`);
     if (field) {
         if (field.type === 'checkbox') {
@@ -296,7 +292,7 @@ function setFormFieldValue(formOrContainerElement, fieldName, value) {
  * @param {string} fieldName The 'name' attribute of the field.
  * @returns {any | null} The value of the field, or null if not found.
  */
-function getFormFieldValue(formOrContainerElement, fieldName) {
+export function getFormFieldValue(formOrContainerElement, fieldName) {
     const field = formOrContainerElement.querySelector(`[name="${fieldName}"]`);
     if (field) {
         if (field.type === 'checkbox') {
@@ -319,7 +315,7 @@ function getFormFieldValue(formOrContainerElement, fieldName) {
  * @param {string} itemSelector CSS selector for each dynamic item.
  * @returns {Array<Object>} An array of objects, each representing an item.
  */
-function serializeDynamicItems(containerElement, itemSelector) {
+export function serializeDynamicItems(containerElement, itemSelector) {
     const items = [];
     if (!containerElement) {
         console.error("Container element not provided for serializeDynamicItems");
@@ -363,7 +359,7 @@ function serializeDynamicItems(containerElement, itemSelector) {
  * @param {Function} [eventListenersSetupCallback] Optional callback to set up event listeners for each new item.
  * @param {Function} [updateLabelsCallback] Optional callback to update labels/indices of items.
  */
-function populateDynamicItems(containerElement, itemSelector, dataArray, createItemHtmlFunction, eventListenersSetupCallback, updateLabelsCallback) {
+export function populateDynamicItems(containerElement, itemSelector, dataArray, createItemHtmlFunction, eventListenersSetupCallback, updateLabelsCallback) {
     if (!containerElement) {
         console.error("Container element not provided for populateDynamicItems");
         return;
@@ -408,17 +404,17 @@ function populateDynamicItems(containerElement, itemSelector, dataArray, createI
 }
 
 // Make functions available globally or export if using modules
-window.FormHandler = {
-    getFormData,
-    validateForm,
-    handleFormSubmit,
-    clearForm,
-    addDynamicFormItem,
-    removeDynamicFormItem,
-    setFormFieldValue,
-    getFormFieldValue,
-    serializeDynamicItems,
-    populateDynamicItems
-};
+//window.FormHandler = {
+//    getFormData,
+//    validateForm,
+//    handleFormSubmit,
+//    clearForm,
+//    addDynamicFormItem,
+//    removeDynamicFormItem,
+//    setFormFieldValue,
+//    getFormFieldValue,
+//    serializeDynamicItems,
+//    populateDynamicItems
+//};
 
 console.log('form-handler.js v1.0 loaded');

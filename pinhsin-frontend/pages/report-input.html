@@ -20,10 +20,32 @@
     <!-- API 腳本 -->
     <script src="../assets/js/api.js"></script>
     <!-- auth.js 將條件式載入 -->
+    <script>
+        // LIFF 初始化邏輯
+        function initializeLIFF() {
+            if (typeof liff !== 'undefined') {
+                liff.init({
+                    liffId: 'YOUR_LIFF_ID' // 需要實際的 LIFF ID
+                }).then(() => {
+                    console.log('LIFF initialized');
+                    const liffCloseBtn = document.getElementById('liffCloseBtn');
+                    if (liffCloseBtn) {
+                        liffCloseBtn.style.display = 'block';
+                        liffCloseBtn.addEventListener('click', () => {
+                            liff.closeWindow();
+                        });
+                    }
+                }).catch((err) => {
+                    console.error('LIFF initialization failed', err);
+                });
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="mobile-container">
-
+        <div class="overlay" id="overlay"></div>
+        
         <div id="pageSelectSite" class="page active">
             <header>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.37 3.414-1.414 3.414H4.828c-1.784 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
@@ -138,10 +160,15 @@
         </div>
     </div>
 
-    <script src="../assets/js/utils/navigation.js"></script>
     <script src="../assets/js/utils/form-handler.js"></script>
+    <script src="../assets/js/utils/navigation.js"></script>
+    <script type="module" src="../assets/js/components/calendar.js" onerror="console.error('Failed to load calendar.js')"></script>
+    <script type="module" src="../assets/js/pages/report-input.js" onerror="console.error('Failed to load report-input.js')"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // 初始化 LIFF
+        initializeLIFF();
+
         // --- 狀態變數 ---
         let reportContext = {
             selectedSite: { id: null, name: null },
@@ -157,6 +184,17 @@
         };
         const UNSAVED_CONTEXT_REPORT_INPUT = 'reportInputForm';
 
+        // 為整個報告表單添加事件委派
+        const reportInputContainer = document.getElementById('pageInputReport');
+        if (reportInputContainer) {
+            reportInputContainer.addEventListener('input', (e) => {
+                if (e.target.matches('input, textarea, select')) {
+                    manageUnsavedChanges(UNSAVED_CONTEXT_REPORT_INPUT, true);
+                    scheduleAutoSave();
+                }
+            });
+        }
+
         // --- DOM 元素 ---
         // Calendar-specific DOM elements (calendarDaysContainer, currentMonthYearEl, prevMonthBtn, nextMonthBtn)
         // are now handled by calendar.js and report-input.js
@@ -167,6 +205,47 @@
         const dailyNotesTextarea = document.getElementById('dailyNotes');
         const weatherSegmentedControl = document.querySelector('.segmented-control[data-field-name="selectedWeather"]');
         const selectedWeatherInput = document.getElementById('selectedWeatherInput');
+        
+        // 數據持久化功能
+        function saveToLocalStorage() {
+            try {
+                const reportKey = `report_${reportContext.selectedSite.id}_${reportContext.selectedDate}`;
+                localStorage.setItem(reportKey, JSON.stringify({
+                    workerData: reportContext.workerData,
+                    materialData: reportContext.materialData,
+                    dailyNotesContent: reportContext.dailyNotesContent,
+                    selectedWeather: reportContext.selectedWeather,
+                    lastSaved: new Date().toISOString()
+                }));
+            } catch (error) {
+                console.error('無法儲存到本地儲存:', error);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const reportKey = `report_${reportContext.selectedSite.id}_${reportContext.selectedDate}`;
+                const savedData = localStorage.getItem(reportKey);
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    Object.assign(reportContext, data);
+                    return true;
+                }
+            } catch (error) {
+                console.error('無法從本地儲存載入:', error);
+            }
+            return false;
+        }
+
+        // 自動儲存功能
+        let autoSaveTimer;
+        function scheduleAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                saveTemporaryReportData();
+                saveToLocalStorage();
+            }, 2000); // 2秒後自動儲存
+        }
 
         // --- Calendar Logic has been moved to html/assets/js/components/calendar.js and html/assets/js/pages/report-input.js ---
 
@@ -328,7 +407,6 @@
             const staticFormData = FormHandler.getFormData(reportFormContainer); // Gets dailyNotes, selectedWeather
             reportContext.dailyNotesContent = staticFormData.dailyNotes;
             reportContext.selectedWeather = staticFormData.selectedWeather;
-
             reportContext.workerData = FormHandler.serializeDynamicItems(workerInputArea, '.worker-item');
             reportContext.materialData = FormHandler.serializeDynamicItems(materialInputArea, '.material-item');
         }
@@ -419,16 +497,28 @@
             }
 
             async function reportSubmitCallback(formData) {
-                // formData contains static fields (dailyNotes, selectedWeather)
-                // Dynamic items are in reportContext.workerData and reportContext.materialData
-                console.log('Daily Report Submitted:');
-                console.log('Static Data:', formData);
-                console.log('Worker Data:', reportContext.workerData);
-                console.log('Material Data:', reportContext.materialData);
-                
-                alert('日報已送出！(模擬)');
-                clearReportFormOnSuccess(); // This also sets unsavedChanges to false
-                // Navigation is handled by initializeNavigation config for this button
+                try {
+                    console.log('Daily Report Submitted:');
+                    console.log('Static Data:', formData);
+                    console.log('Worker Data:', reportContext.workerData);
+                    console.log('Material Data:', reportContext.materialData);
+                    
+                    // 實際的 API 調用
+                    // const response = await submitDailyReport({
+                    //     ...formData,
+                    //     siteId: reportContext.selectedSite.id,
+                    //     date: reportContext.selectedDate,
+                    //     workers: reportContext.workerData,
+                    //     materials: reportContext.materialData
+                    // });
+                    
+                    alert('日報已送出！(模擬)');
+                    clearReportFormOnSuccess();
+                } catch (error) {
+                    console.error('日報送出失敗:', error);
+                    alert('日報送出失敗，請檢查網路連線後重試。');
+                    throw error; // 讓 FormHandler 知道提交失敗
+                }
             }
 
             FormHandler.handleFormSubmit(
@@ -561,7 +651,5 @@
         });
     });
     </script>
-    <script type="module" src="../assets/js/components/calendar.js"></script>
-    <script type="module" src="../assets/js/pages/report-input.js"></script>
 </body>
 </html>

@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>品信工務系統 - 管理員後台</title>
+
+    <!-- LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+     <!-- vConsole for mobile debugging -->
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // 初始化 vConsole (手機調試工具)
+        if (typeof VConsole !== 'undefined') {
+            var vConsole = new VConsole();
+            console.log('🔧 vConsole 已啟用 - 點擊右下角綠色按鈕查看調試資訊');
+        }
+    </script>
     
     <!-- 字體載入 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,7 +89,7 @@
                 
                 <a href="#employeeManagement" class="admin-nav-item" data-page="employeeManagement">
                     <i class="fas fa-users icon"></i>
-                    <span class="text">用戶管理</span>
+                    <span class="text">員工管理</span>
                 </a>
                 
                 <a href="#issues" class="admin-nav-item" data-page="issues">
@@ -309,10 +325,16 @@
                         <h2 class="admin-font-bold admin-text-2xl admin-mb-1">用戶管理</h2>
                         <p style="color: var(--text-gray-medium);">管理系統用戶和權限</p>
                     </div>
-                    <button class="admin-btn admin-btn-primary" onclick="openUserModal()">
-                        <i class="fas fa-plus"></i>
-                        新增用戶
-                    </button>
+                    <div class="admin-flex admin-gap-2">
+                        <button class="admin-btn admin-btn-primary" onclick="openUserModal()">
+                            <i class="fas fa-plus"></i>
+                            新增用戶
+                        </button>
+                        <button class="admin-btn admin-btn-secondary" onclick="adminPanel.openHrPasswordModal()">
+                            <i class="fas fa-user-tie"></i>
+                            指派HR
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 搜尋和篩選 -->
@@ -505,7 +527,7 @@
                         <h2 class="admin-font-bold admin-text-2xl admin-mb-1">工地管理</h2>
                         <p style="color: var(--text-gray-medium);">管理工地資訊和狀態</p>
                     </div>
-                    <button class="admin-btn admin-btn-primary" onclick="openSiteModal()">
+                    <button class="admin-btn admin-btn-primary" onclick="adminPanel.openSiteModal()">
                         <i class="fas fa-plus"></i>
                         新增工地
                     </button>
@@ -557,34 +579,45 @@
                             </button>
                         </div>
                     </div>
-                    <div class="admin-card-body admin-p-0">
-                        <div class="admin-table-container">
-                            <table class="admin-table" id="sitesTable">
-                                <thead class="admin-table-header">
-                                    <tr>
-                                        <th>
-                                            <input type="checkbox" class="admin-checkbox">
-                                        </th>
-                                        <th>工地名稱</th>
-                                        <th>地址</th>
-                                        <th>負責人</th>
-                                        <th>狀態</th>
-                                        <th>建立時間</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="admin-table-body">
-                                    <!-- 將由 JavaScript 動態載入 -->
-                                </tbody>
-                            </table>
+                    <div class="admin-card-body">
+                        <!-- 工地容器 -->
+                        <div id="sitesContainer" class="sites-grid">
+                            <!-- 將由 JavaScript 動態載入工地卡片 -->
                         </div>
                     </div>
                 </div>
             </div>
             
             <div id="permissionsPage" class="admin-page">
-                <h2>權限管理</h2>
-                <p>權限管理功能開發中...</p>
+                <div class="admin-flex admin-justify-between admin-items-center admin-mb-4">
+                    <div>
+                        <h2 class="admin-font-bold admin-text-2xl admin-mb-1">權限管理</h2>
+                        <p style="color: var(--text-gray-medium);">管理用戶工地權限和角色設定</p>
+                    </div>
+                    <button class="admin-btn admin-btn-primary" onclick="adminPanel.openPermissionModal()">
+                        <i class="fas fa-plus"></i>
+                        分配權限
+                    </button>
+                </div>
+                
+                <!-- 權限列表 -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">權限配置</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="adminPanel.loadPermissionsData()">
+                                <i class="fas fa-sync-alt"></i>
+                                重新載入
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-card-body">
+                        <!-- 權限容器 -->
+                        <div id="permissionsContainer" class="permissions-grid">
+                            <!-- 將由 JavaScript 動態載入權限卡片 -->
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div id="systemPage" class="admin-page">
@@ -823,8 +856,55 @@
             </div>
         </div>
     </div>
-    
-    </div>
+
+    <!-- HR密碼設定模態框 -->
+    <div id="hrPasswordModal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">指派員工擔任HR</h3>
+                <button class="admin-modal-close" onclick="adminPanel.closeHrPasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-modal-body">
+                <form id="hrPasswordForm">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">請選擇</label>
+                        <select class="admin-form-select" name="employee" id="hrEmployeeSelect" required>
+                            <option value="">請選擇</option>
+                        </select>
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">管理員帳號</label>
+                        <input type="text" class="admin-form-input" name="username" id="hrUsernameInput" required placeholder="請輸入管理員登入帳號">
+                        <span class="admin-form-error"></span>
+                        <small class="admin-form-help">此帳號僅用於管理後台登入，不會影響員工原有的LINE綁定</small>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">管理員密碼</label>
+                        <input type="password" class="admin-form-input" name="password" required placeholder="設定管理後台登入密碼">
+                        <span class="admin-form-error"></span>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label required">密碼確認</label>
+                        <input type="password" class="admin-form-input" name="confirmPassword" required placeholder="再次輸入確認密碼">
+                        <span class="admin-form-error"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" class="admin-btn admin-btn-secondary" onclick="adminPanel.closeHrPasswordModal()">
+                    取消
+                </button>
+                <button type="button" class="admin-btn admin-btn-primary" onclick="adminPanel.saveHrPassword()">
+                    確定
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- 班表模板管理模態框 -->
@@ -914,25 +994,25 @@
         </div>
     </div>
 
-    <!-- JavaScript 載入 -->
-    <script src="../assets/js/api.js"></script>
-    <script src="../assets/js/auth.js"></script>
-    <script src="../assets/js/pages/admin.js"></script>
+    <!-- JavaScript 載入 - 正確順序 -->
+    <script src="../assets/js/api.js" onerror="console.error('Failed to load api.js')"></script>
+    <script src="../assets/js/auth.js" onerror="console.error('Failed to load auth.js')"></script>
+    <script src="../assets/js/pages/admin.js" onerror="console.error('Failed to load admin.js')"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded fired');
-            console.log('api available:', typeof api !== 'undefined');
-            console.log('auth available:', typeof auth !== 'undefined');
+            console.log('🚀 Admin Panel 開始初始化');
+            const startTime = performance.now();
             
             // 等待所有必要的模組載入
             function waitForModules() {
                 if (typeof api === 'undefined' || typeof auth === 'undefined') {
-                    console.log('Waiting for modules to load...');
+                    console.log('⏳ 等待模組載入中...');
                     setTimeout(waitForModules, 100);
                     return;
                 }
                 
-                console.log('All modules loaded, starting auth check...');
+                console.log('✅ 所有模組已載入，開始認證檢查...');
                 
                 // 使用標準認證流程來初始化管理員面板
                 auth.initializeAuthCheck(
@@ -949,15 +1029,23 @@
                         
                         // 初始化管理員面板
                         if (typeof AdminPanel !== 'undefined') {
-                            window.adminPanel = new AdminPanel();
-                            window.adminPanel.init(user);
+                            try {
+                                window.adminPanel = new AdminPanel();
+                                window.adminPanel.init(user);
+                                
+                                // 性能監控
+                                const endTime = performance.now();
+                                console.log(`✅ Admin Panel 初始化完成，耗時: ${(endTime - startTime).toFixed(2)}ms`);
+                            } catch (error) {
+                                console.error('❌ Admin Panel 初始化失敗:', error);
+                            }
                         } else {
-                            console.warn('AdminPanel class not available');
+                            console.warn('⚠️ AdminPanel 類別不可用');
                         }
                     },
                     () => {
-                        // 認證失敗的處理
-                        console.warn('Admin access denied. Auth module is handling the UI.');
+                        // 認證失敗的回調
+                        console.log('Admin access denied - 隱藏管理員內容');
                         
                         // 隱藏管理員內容，但保持 body 可見以顯示登入彈窗
                         const adminLayout = document.querySelector('.admin-layout');
@@ -975,6 +1063,21 @@
     </script>
     
     <style>
+        /* CSS 變數定義 */
+        :root {
+            --admin-primary-rgb: 59, 130, 246;
+            --admin-secondary-rgb: 107, 114, 128;
+            --admin-space-1: 0.25rem;
+            --admin-space-2: 0.5rem;
+            --admin-space-3: 0.75rem;
+            --admin-space-4: 1rem;
+            --admin-font-xs: 0.75rem;
+            --admin-font-sm: 0.875rem;
+            --admin-font-lg: 1.125rem;
+            --admin-radius-md: 8px;
+            --admin-border-radius: 6px;
+        }
+
         /* 額外的頁面專用樣式 */
         .admin-page {
             display: none;

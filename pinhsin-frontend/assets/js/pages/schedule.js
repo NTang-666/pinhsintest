@@ -23,6 +23,59 @@ if (typeof manageUnsavedChanges === 'undefined') {
 
 
 document.addEventListener('DOMContentLoaded', function() {
+
+    // ✅ 修正：檢查 Supabase 是否可用
+    if (typeof supabase === 'undefined') {
+        console.error('Supabase SDK 未載入，請確保在 HTML 中正確引入 Supabase CDN');
+        return;
+    }
+    // --- ① 初始化 Supabase ---
+    const supabaseUrl = 'https://yssmaiuttfwzddebykqi.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlzc21haXV0dGZ3emRkZWJ5a3FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTE5MTQsImV4cCI6MjA2OTUyNzkxNH0.SKMbZH-HjsU08pvhgVNaIy3brwSz8mix1LoWgtE6VVw';
+    let supabaseClient;
+    try {
+        supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        console.log('✅ Supabase 客戶端初始化成功');
+    } catch (error) {
+        console.error('❌ Supabase 客戶端初始化失敗:', error);
+        return;
+    }
+
+    // 抓工地資料並產出卡片
+    async function loadSitesForSchedule() {
+        const { data, error } = await supabaseClient
+            .from('sites')
+            .select('id, name, current_task, remaining_days');
+
+        if (error) {
+            console.error('讀取工地資料失敗', error);
+            return;
+        }
+
+        const container = document.querySelector('#pageSelectSiteForSchedule .content-area');
+        container.innerHTML = ''; // 清空預設
+
+        data.forEach(site => {
+            const card = document.createElement('div');
+            card.className = 'card site-schedule-card';
+            card.dataset.siteId = site.id;
+            card.dataset.siteName = site.name;
+            card.innerHTML = `
+              <h2 class="text-lg font-bold text-main mb-1">${site.name}</h2>
+              <p class="text-xs text-secondary flex items-center">
+                <i class="fas fa-tasks fa-fw mr-1.5"></i>目前工項: ${site.current_task || '-'}
+              </p>
+              <p class="text-xs text-secondary flex items-center">
+                <i class="far fa-calendar-alt fa-fw mr-1.5"></i>剩餘工期: ${site.remaining_days ?? '-'} 天
+              </p>
+              <button class="mt-2 text-sm font-medium text-accent w-full text-right">查看進度表 ></button>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // 👉 載入工地選單（一定要放在 DOMContentLoaded 裡）
+    loadSitesForSchedule();
     // 僅當在工程進度表頁面時才執行
     const ganttDatesHeaderEl = document.getElementById('ganttDatesHeader');
     const ganttTasksAreaEl = document.getElementById('ganttTasksArea');

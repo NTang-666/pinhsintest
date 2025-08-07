@@ -1,0 +1,26 @@
+/* Page-specific styles for 工地儀表板.html */
+
+.font-schibsted { /* 備用字體 */
+    font-family: 'Schibsted Grotesk', 'Helvetica Display', 'Noto Sans TC', sans-serif;
+}
+
+/* Specific overrides or additions for mobile-container on this page */
+.mobile-container {
+    /* common.css already defines max-width, min-height, margin, background-color, display, flex-direction, position, overflow-x */
+    /* This specific box-shadow is from the original 工地儀表板.html style */
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    /* background-color: #F2F4F7; /* This is var(--page-bg-light), already handled by common.css if .bg-page-light is on body or mobile-container itself */
+}
+
+/* Styles for #siteListPage and #siteDashboardPage specific layouts if any, beyond Tailwind classes */
+/* For example, if there were specific paddings/margins not covered by Tailwind or general component styles. */
+/* In this case, most layout is handled by Tailwind and the general structure. */
+
+/* Header specific to #siteDashboardPage (if not already a reusable component) */
+/* The header inside #siteDashboardPage uses .bg-page-light, .text-main-dark, .border-b, .border-gray-light-accent */
+/* These are utility classes or variables from common.css, so no specific CSS needed here unless there are unique structural styles. */
+
+/* Example: If #siteDashboardPage .p-4 needed a very specific override for this page only */
+/* #siteDashboardPage .content-area { */
+/*   padding: 1.2rem; /* Overriding common.css .content-area padding for this page */
+/* } */

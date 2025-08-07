@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品信。建築。空間設計 - 3D效果圖作品展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background-color: #ffffff;
+            color: #333333;
+            line-height: 1.6;
+            /* min-width: 1200px; */
+        }
+
+        /* 頂部導航列 */
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            text-decoration: none;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 40px;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            font-size: 1rem;
+            padding: 8px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+
+        /* 頁面標題區 */
+        .page-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .page-subtitle {
+            font-size: 1.2rem;
+            color: #6c757d;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 篩選器區域 */
+        .filter-section {
+            background: #fff;
+            padding: 30px 0;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            background: none;
+            border: 1px solid #dee2e6;
+            padding: 12px 24px;
+            font-size: 1rem;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-right: none;
+        }
+
+        .filter-tab:first-child {
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
+
+        .filter-tab:last-child {
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .filter-tab.active,
+        .filter-tab:hover {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        .filter-info {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        /* 作品網格 */
+        .portfolio-grid {
+            padding: 40px 0 80px;
+            background: #fafafa;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+        }
+
+        .portfolio-item {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .portfolio-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .portfolio-image {
+            width: 100%;
+            height: 220px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portfolio-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="%23ddd"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .image-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #999;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .portfolio-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(52, 152, 219, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .portfolio-item:hover .portfolio-overlay {
+            opacity: 1;
+        }
+
+        .play-button {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #3498db;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .play-button:hover {
+            background: #fff;
+            transform: scale(1.1);
+        }
+
+        .portfolio-info {
+            padding: 20px;
+        }
+
+        .portfolio-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .portfolio-category {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        .portfolio-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* 3D瀏覽器模態框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            position: relative;
+            margin: 2% auto;
+            width: 90%;
+            height: 90%;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+
+        /* 移動端模態框調整 */
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 1% auto;
+                width: 95%;
+                height: 95%;
+                border-radius: 0;
+            }
+            
+            .modal-header {
+                padding: 15px 20px;
+            }
+            
+            .modal-title {
+                font-size: 1.1rem;
+            }
+            
+            .modal-controls {
+                gap: 10px;
+            }
+            
+            .control-button {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }    
+
+        .modal-header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #fff;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .modal-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .control-button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background 0.3s ease;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .iframe-container {
+            width: 100%;
+            height: calc(100% - 81px);
+            position: relative;
+            background: #f8f9fa;
+        }
+
+        .iframe-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 30px;
+            color: #dee2e6;
+        }
+
+        .placeholder-title {
+            font-size: 1.5rem;
+            color: #495057;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .placeholder-description {
+            max-width: 500px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .placeholder-code {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #6f42c1;
+            margin: 15px 0;
+        }
+
+        .twinmotion-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        /* 載入動畫 */
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 響應式調整 - 改善移動端支援 */
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+                padding: 0 15px;
+                gap: 15px;
+            }
+            
+            .nav-menu {
+                display: none; /* 移動端隱藏導航，需要漢堡選單 */
+            }
+            
+            .page-title {
+                font-size: 1.8rem;
+            }
+            
+            .page-subtitle {
+                font-size: 1rem;
+                padding: 0 20px;
+            }
+            
+            .filter-tabs {
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+            
+            .filter-tab {
+                border-radius: 6px !important;
+                border: 1px solid #dee2e6 !important;
+                margin-bottom: 5px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1025px) and (max-width: 1400px) {
+            .grid-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1401px) {
+            .grid-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .grid-container {
+                grid-template-columns: repeat(5, 1fr);
+                max-width: 1600px;
+            }
+        }
+
+        /* 側邊信息面板 */
+        .info-panel {
+            position: fixed;
+            right: -350px;
+            top: 0;
+            width: 350px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1500;
+            overflow-y: auto;
+        }
+
+        .info-panel.open {
+            right: 0;
+        }
+
+        /* 移動端資訊面板調整 */
+        @media (max-width: 768px) {
+            .info-panel {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .info-panel.open {
+                right: 0;
+            }
+        }
+
+        .info-panel-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e5e5;
+            background: #f8f9fa;
+        }
+
+        .info-panel-content {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 頂部導航 -->
+    <header class="header">
+        <div class="nav-container">
+            <a href="#" class="logo">品信。建築。空間設計</a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="#" class="active">3D作品展示</a></li>
+                    <li><a href="#">營造工程</a></li>
+                    <li><a href="#">室內設計</a></li>
+                    <li><a href="#">關於我們</a></li>
+                    <li><a href="#">聯絡我們</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 頁面標題 -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">3D效果圖作品展示</h1>
+            <p class="page-subtitle">探索我們的專業營造與室內設計作品，體驗沉浸式的3D互動瀏覽</p>
+        </div>
+    </section>
+
+    <!-- 篩選器 -->
+    <section class="filter-section">
+        <div class="container">
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-category="all">全部作品</button>
+                <button class="filter-tab" data-category="residential">住宅設計</button>
+                <button class="filter-tab" data-category="commercial">商業空間</button>
+                <button class="filter-tab" data-category="construction">營造工程</button>
+                <button class="filter-tab" data-category="renovation">舊屋翻新</button>
+            </div>
+            <div class="filter-info">
+                <span id="project-count">36</span> 個專案作品 | 支援 Twinmotion 3D 互動瀏覽
+            </div>
+        </div>
+    </section>
+
+    <!-- 作品網格 -->
+    <section class="portfolio-grid">
+        <div class="grid-container" id="portfolio-grid">
+            <!-- 動態生成的作品項目將插入這裡 -->
+        </div>
+    </section>
+
+    <!-- 3D瀏覽器模態框 -->
+    <div id="viewer-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">3D作品瀏覽</h3>
+                <div class="modal-controls">
+                    <button class="control-button" onclick="previousProject()">⬅️ 上一個</button>
+                    <button class="control-button" onclick="nextProject()">➡️ 下一個</button>
+                    <button class="control-button" onclick="toggleFullscreen()">🔳 全螢幕</button>
+                    <button class="control-button" onclick="resetView()">🔄 重置視角</button>
+                    <button class="control-button" onclick="showInfo()">ℹ️ 專案資訊</button>
+                    <button class="close-btn" onclick="close3DViewer()">&times;</button>
+                </div>
+            </div>
+            <div class="iframe-container">
+                <iframe id="twinmotion-iframe" class="twinmotion-iframe" frameborder="0" allowfullscreen></iframe>
+                
+                <div id="iframe-placeholder" class="iframe-placeholder">
+                    <div class="placeholder-icon">🎮</div>
+                    <h3 class="placeholder-title">Twinmotion 3D 體驗</h3>
+                    <p class="placeholder-description">
+                        此區域將顯示您的 Twinmotion 3D 互動內容。<br>
+                        請將導出的 HTML 檔案 URL 設定到對應的專案配置中。
+                    </p>
+                    <div class="placeholder-code">
+                        twinmotionUrls['project_id'] = 'YOUR_TWINMOTION_URL'
+                    </div>
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top: 15px; color: #28a745; font-weight: 600;">
+                        💡 設定完成後即可享受完整的 3D 互動體驗
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 專案資訊側邊面板 -->
+    <div id="info-panel" class="info-panel">
+        <div class="info-panel-header">
+            <h4>專案詳細資訊</h4>
+            <button onclick="closeInfoPanel()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;">&times;</button>
+        </div>
+        <div class="info-panel-content" id="info-panel-content">
+            <!-- 專案詳細資訊將在這裡顯示 -->
+        </div>
+    </div>
+
+    <script>
+        // 專案數據 - 您可以在這裡添加更多專案
+        const projectsData = [
+            {
+                id: 'modern_house_01',
+                title: '現代別墅設計案例',
+                category: 'residential',
+                description: '結合現代簡約美學與智能家居技術的豪華住宅設計',
+                tags: ['現代風格', 'Twinmotion', '別墅設計'],
+                twinmotionUrl: '', // 在這裡設定 Twinmotion URL
+                details: {
+                    area: '450坪',
+                    location: '台北市信義區',
+                    year: '2024',
+                    style: '現代簡約'
+                }
+            },
+            {
+                id: 'office_design_01',
+                title: '企業總部辦公空間',
+                category: 'commercial',
+                description: '融合企業文化與現代辦公需求的創新空間設計',
+                tags: ['商業空間', 'BIM模型', '辦公設計'],
+                twinmotionUrl: '',
+                details: {
+                    area: '1200坪',
+                    location: '台北市內湖區',
+                    year: '2024',
+                    style: '現代商務'
+                }
+            },
+            {
+                id: 'residential_complex',
+                title: '住宅大樓建築工程',
+                category: 'construction',
+                description: '採用BIM技術的現代住宅建築營造專案',
+                tags: ['營造工程', 'Revit', '住宅建築'],
+                twinmotionUrl: '',
+                details: {
+                    area: '15000坪',
+                    location: '新北市板橋區',
+                    year: '2023-2024',
+                    style: '現代建築'
+                }
+            },
+            {
+                id: 'renovation_project',
+                title: '老宅翻新改造案例',
+                category: 'renovation',
+                description: '保留歷史韻味的老宅全面翻新設計',
+                tags: ['舊屋翻新', '古蹟修復', '永續設計'],
+                twinmotionUrl: '',
+                details: {
+                    area: '80坪',
+                    location: '台南市中西區',
+                    year: '2024',
+                    style: '古典現代'
+                }
+            }
+        ];
+
+        // 複製項目以創建更多展示內容
+        const allProjects = [];
+        for (let i = 0; i < 9; i++) {
+            projectsData.forEach((project, index) => {
+                allProjects.push({
+                    ...project,
+                    id: `${project.id}_${i}_${index}`,
+                    title: `${project.title} ${String.fromCharCode(65 + i)}${index + 1}`
+                });
+            });
+        }
+
+        // Twinmotion URL 配置 - 在這裡設定您的 Twinmotion 網址
+        const twinmotionUrls = {};
+        allProjects.forEach(project => {
+            twinmotionUrls[project.id] = 'https://twinmotion.unrealengine.com/presentation/c3HkKdCRIf3HfHvI'; // 請將對應的 Twinmotion URL 填入這裡
+        });
+
+        // 渲染專案網格
+        function renderProjects(projects = allProjects) {
+            const grid = document.getElementById('portfolio-grid');
+            grid.innerHTML = '';
+
+            projects.forEach(project => {
+                const projectItem = document.createElement('div');
+                projectItem.className = 'portfolio-item';
+                projectItem.setAttribute('data-category', project.category);
+                
+                projectItem.innerHTML = `
+                    <div class="portfolio-image">
+                        <div class="image-placeholder">
+                            🖼️<br>作品預覽圖<br><small>${project.category}</small>
+                        </div>
+                        <div class="portfolio-overlay">
+                            <button class="play-button">▶</button>
+                        </div>
+                    </div>
+                    <div class="portfolio-info">
+                        <h3 class="portfolio-title">${project.title}</h3>
+                        <p class="portfolio-category">${getCategoryName(project.category)}</p>
+                        <div class="portfolio-tags">
+                            ${project.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+
+                projectItem.addEventListener('click', () => open3DViewer(project));
+                grid.appendChild(projectItem);
+            });
+
+            // 更新專案計數
+            document.getElementById('project-count').textContent = projects.length;
+        }
+
+        // 分類名稱轉換
+        function getCategoryName(category) {
+            const names = {
+                'residential': '住宅設計',
+                'commercial': '商業空間',
+                'construction': '營造工程',
+                'renovation': '舊屋翻新'
+            };
+            return names[category] || '其他';
+        }
+
+        // 篩選功能
+        function setupFilters() {
+            const filterTabs = document.querySelectorAll('.filter-tab');
+            
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // 更新活動標籤
+                    filterTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // 篩選專案
+                    const category = tab.getAttribute('data-category');
+                    let filteredProjects;
+
+                    if (category === 'all') {
+                        filteredProjects = allProjects;
+                    } else {
+                        filteredProjects = allProjects.filter(project => project.category === category);
+                    }
+
+                    renderProjects(filteredProjects);
+                });
+            });
+        }
+
+        // 開啟3D瀏覽器
+        function open3DViewer(project) {
+            const modal = document.getElementById('viewer-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const iframe = document.getElementById('twinmotion-iframe');
+            const placeholder = document.getElementById('iframe-placeholder');
+            
+            if (!modal || !modalTitle || !iframe || !placeholder) {
+                console.error('模態框元素未找到');
+                return;
+            }
+            
+            modalTitle.textContent = `${project.title} - 3D互動瀏覽`;
+            
+            // 檢查是否有設定對應的 Twinmotion URL
+            const twinmotionUrl = twinmotionUrls[project.id] || project.twinmotionUrl;
+            
+            if (twinmotionUrl && twinmotionUrl.trim() !== '') {
+                // 載入 iframe
+                iframe.src = twinmotionUrl;
+                iframe.style.display = 'block';
+                placeholder.style.display = 'none';
+                
+                // 添加載入錯誤處理
+                iframe.onerror = function() {
+                    console.error('Twinmotion 內容載入失敗');
+                    iframe.style.display = 'none';
+                    placeholder.style.display = 'flex';
+                    placeholder.innerHTML = `
+                        <div class="placeholder-icon">⚠️</div>
+                        <h3 class="placeholder-title">載入失敗</h3>
+                        <p class="placeholder-description">
+                            無法載入 3D 內容，請檢查網址是否正確或網路連線狀態
+                        </p>
+                    `;
+                };
+            } else {
+                // 顯示設定說明
+                iframe.style.display = 'none';
+                placeholder.style.display = 'flex';
+                
+                placeholder.innerHTML = `
+                    <div class="placeholder-icon">🎮</div>
+                    <h3 class="placeholder-title">${project.title}</h3>
+                    <p class="placeholder-description">
+                        ${project.description}<br><br>
+                        此專案的 Twinmotion 3D 體驗尚未設定，請在程式碼中設定對應的 URL
+                    </p>
+                    <div class="placeholder-code">
+                        twinmotionUrls['${project.id}'] = 'YOUR_TWINMOTION_URL'
+                    </div>
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top: 15px; color: #28a745; font-weight: 600;">
+                        💡 設定完成後即可體驗完整的 3D 互動瀏覽功能
+                    </p>
+                `;
+            }
+            
+            // 顯示模態框
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // 儲存當前專案資訊供其他功能使用
+            window.currentProject = project;
+        }
+
+        // 關閉3D瀏覽器
+        function close3DViewer() {
+            const modal = document.getElementById('viewer-modal');
+            const iframe = document.getElementById('twinmotion-iframe');
+            
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            iframe.src = '';
+            
+            // 關閉資訊面板
+            closeInfoPanel();
+        }
+
+        // 全螢幕切換
+        function toggleFullscreen() {
+            const modalContent = document.querySelector('.modal-content');
+            
+            if (!document.fullscreenElement) {
+                modalContent.requestFullscreen().catch(err => {
+                    console.log('全螢幕請求失敗:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 重置視角 (針對支援的3D內容)
+        function resetView() {
+            const iframe = document.getElementById('twinmotion-iframe');
+            if (iframe.style.display === 'block') {
+                // 重新載入iframe以重置視角
+                const currentSrc = iframe.src;
+                iframe.src = '';
+                setTimeout(() => {
+                    iframe.src = currentSrc;
+                }, 100);
+            }
+        }
+
+        // 顯示專案資訊
+        function showInfo() {
+            if (!window.currentProject) return;
+            
+            const panel = document.getElementById('info-panel');
+            const content = document.getElementById('info-panel-content');
+            const project = window.currentProject;
+            
+            content.innerHTML = `
+                <h4 style="margin-bottom: 20px; color: #2c3e50;">${project.title}</h4>
+                
+                <div style="margin-bottom: 25px;">
+                    <h5 style="color: #6c757d; margin-bottom: 10px;">專案描述</h5>
+                    <p style="line-height: 1.6;">${project.description}</p>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h5 style="color: #6c757d; margin-bottom: 15px;">專案資訊</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem;">
+                        <div><strong>面積：</strong>${project.details.area}</div>
+                        <div><strong>地點：</strong>${project.details.location}</div>
+                        <div><strong>年份：</strong>${project.details.year}</div>
+                        <div><strong>風格：</strong>${project.details.style}</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h5 style="color: #6c757d; margin-bottom: 10px;">技術標籤</h5>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${project.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h5 style="color: #6c757d; margin-bottom: 10px;">專案特色</h5>
+                    <ul style="line-height: 1.6; padding-left: 20px;">
+                        <li>採用最新BIM建築資訊建模技術</li>
+                        <li>3D視覺化設計驗證與溝通</li>
+                        <li>精確的工程量計算與成本控制</li>
+                        <li>多專業協同作業整合</li>
+                    </ul>
+                </div>
+                
+                <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; margin-top: 30px;">
+                    <h6 style="color: #495057; margin-bottom: 10px;">💡 互動操作提示</h6>
+                    <ul style="font-size: 0.85rem; color: #6c757d; line-height: 1.5; margin: 0; padding-left: 20px;">
+                        <li>滑鼠拖拽：旋轉視角</li>
+                        <li>滾輪：縮放視圖</li>
+                        <li>WASD鍵：移動視點</li>
+                        <li>右鍵：重置視角</li>
+                    </ul>
+                </div>
+            `;
+            
+            panel.classList.add('open');
+        }
+
+        // 關閉資訊面板
+        function closeInfoPanel() {
+            const panel = document.getElementById('info-panel');
+            panel.classList.remove('open');
+        }
+
+        // 點擊模態框背景關閉
+        document.getElementById('viewer-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                close3DViewer();
+            }
+        });
+
+        // 鍵盤快捷鍵
+        document.addEventListener('keydown', function(e) {
+            // 只在模態框開啟時才響應快捷鍵
+            const isModalOpen = document.getElementById('viewer-modal').style.display === 'block';
+            
+            if (e.key === 'Escape') {
+                if (isModalOpen) {
+                    const infoPanel = document.getElementById('info-panel');
+                    if (infoPanel.classList.contains('open')) {
+                        closeInfoPanel();
+                    } else {
+                        close3DViewer();
+                    }
+                }
+            } else if (e.key === 'F11') {
+                e.preventDefault();
+                if (isModalOpen) {
+                    toggleFullscreen();
+                }
+            } else if (e.key === 'i' || e.key === 'I') {
+                if (isModalOpen) {
+                    showInfo();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (isModalOpen) {
+                    e.preventDefault();
+                    previousProject();
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (isModalOpen) {
+                    e.preventDefault();
+                    nextProject();
+                }
+            }
+        });
+
+        // 頁面載入完成初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            renderProjects();
+            setupFilters();
+            
+            console.log('品信工務 3D展示頁面已載入');
+            console.log('總共', allProjects.length, '個專案作品');
+            console.log('請在 twinmotionUrls 物件中設定您的 Twinmotion 3D HTML 網址');
+            
+            // 預載入一些示例數據提示
+            console.log('範例設定：');
+            console.log('twinmotionUrls["modern_house_01_0_0"] = "https://your-twinmotion-url.com/project1.html";');
+        });
+
+        // 平滑滾動到作品區域
+        function scrollToPortfolio() {
+            document.querySelector('.portfolio-grid').scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+
+        // 搜尋功能 (可選擴展)
+        function searchProjects(keyword) {
+            const filtered = allProjects.filter(project => 
+                project.title.toLowerCase().includes(keyword.toLowerCase()) ||
+                project.description.toLowerCase().includes(keyword.toLowerCase()) ||
+                project.tags.some(tag => tag.toLowerCase().includes(keyword.toLowerCase()))
+            );
+            renderProjects(filtered);
+        }
+
+        // 添加搜尋框事件監聽 (如果需要的話)
+        // const searchInput = document.getElementById('search-input');
+        // if (searchInput) {
+        //     searchInput.addEventListener('input', (e) => {
+        //         searchProjects(e.target.value);
+        //     });
+        // }
+        // 觸控設備支援 - 添加在這裡
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipeGesture();
+        }
+
+        function handleSwipeGesture() {
+            const swipeThreshold = 50;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+            
+            // 檢查是否在模態框中
+            const modal = document.getElementById('viewer-modal');
+            const isModalOpen = modal.style.display === 'block';
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // 水平滑動
+                if (Math.abs(diffX) > swipeThreshold) {
+                    if (diffX > 0) {
+                        // 向左滑動 - 下一個專案
+                        if (isModalOpen) {
+                            nextProject();
+                        }
+                    } else {
+                        // 向右滑動 - 上一個專案
+                        if (isModalOpen) {
+                            previousProject();
+                        }
+                    }
+                }
+            } else {
+                // 垂直滑動
+                if (Math.abs(diffY) > swipeThreshold) {
+                    if (diffY > 0) {
+                        // 向上滑動 - 顯示資訊面板
+                        if (isModalOpen) {
+                            showInfo();
+                        }
+                    } else {
+                        // 向下滑動 - 關閉模態框或面板
+                        if (isModalOpen) {
+                            const infoPanel = document.getElementById('info-panel');
+                            if (infoPanel.classList.contains('open')) {
+                                closeInfoPanel();
+                            } else {
+                                close3DViewer();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 添加觸控事件監聽
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchend', handleTouchEnd, false);
+
+        // 專案切換功能
+        function nextProject() {
+            const currentIndex = allProjects.findIndex(p => p.id === window.currentProject?.id);
+            if (currentIndex !== -1 && currentIndex < allProjects.length - 1) {
+                open3DViewer(allProjects[currentIndex + 1]);
+            }
+        }
+
+        function previousProject() {
+            const currentIndex = allProjects.findIndex(p => p.id === window.currentProject?.id);
+            if (currentIndex > 0) {
+                open3DViewer(allProjects[currentIndex - 1]);
+            }
+        }
+
+    </script>
+</body>
+</html>
